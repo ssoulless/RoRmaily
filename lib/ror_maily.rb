@@ -19,9 +19,7 @@ module RoRmaily
         RoRmaily::Logging.initialize(logger_opts)
       end
 
-      if args["mailing"] && args["entity"]
-        RoRmaily::Manager.deliver args["mailing"], args["entity"]
-      elsif args["mailing"]
+      if args["mailing"]
         RoRmaily::Manager.run_mailing args["mailing"]
       elsif args["sequence"]
         RoRmaily::Manager.run_sequence args["sequence"]
@@ -181,15 +179,15 @@ module RoRmaily
     # @option options [true, false] :locked (false) Determines whether Mailing is locked.
     # @see Dispatch#locked?
     def ad_hoc_mailing name, options = {}
-      mailing = MailyHerald::AdHocMailing.where(name: name).first 
+      mailing = RoRmaily::AdHocMailing.where(name: name).first 
       lock = options.delete(:locked)
 
       if block_given? && !self.dispatch_locked?(name) && (!mailing || lock)
-        mailing ||= MailyHerald::AdHocMailing.new(name: name)
+        mailing ||= RoRmaily::AdHocMailing.new(name: name)
         yield(mailing)
         mailing.save! 
 
-        MailyHerald.lock_dispatch(name) if lock
+        RoRmaily.lock_dispatch(name) if lock
       end
 
       mailing
@@ -329,13 +327,6 @@ module RoRmaily
       else
         @@token_redirect
       end
-    end
-
-    def deliver mailing_name, entity_id
-      mailing_name = mailing_name.name if mailing_name.is_a?(Mailing)
-      entity_id = entity_id.id if !entity_id.is_a?(Fixnum)
-
-      Async.perform_async mailing: mailing_name, entity: entity_id, logger: RoRmaily::Logging.safe_options
     end
 
     def run_sequence seq_name

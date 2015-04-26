@@ -1,11 +1,11 @@
 require 'spec_helper'
 
-describe RoRmaily::OneTimeMailing do
+describe MailyHerald::AdHocMailing do
   before(:each) do
     @entity = FactoryGirl.create :user
 
-    @list = RoRmaily.list(:generic_list)
-    expect(@list.context).to be_a(RoRmaily::Context)
+    @list = MailyHerald.list(:generic_list)
+    expect(@list.context).to be_a(MailyHerald::Context)
   end
 
   describe "with subscription" do
@@ -15,29 +15,37 @@ describe RoRmaily::OneTimeMailing do
 
     describe "run all delivery" do
       before(:each) do
-        @mailing = RoRmaily.one_time_mailing(:test_mailing)
-        @mailing.should be_a RoRmaily::OneTimeMailing
+        @mailing = MailyHerald.ad_hoc_mailing(:ad_hoc_mail)
+        @mailing.should be_a MailyHerald::AdHocMailing
         @mailing.should_not be_a_new_record
-        @mailing.should be_valid
+      end
+
+      it "should not be delivered without explicit scheduling" do
+        expect(MailyHerald::Subscription.count).to eq(1)
+        @mailing.conditions_met?(@entity).should be_truthy
+        @mailing.processable?(@entity).should be_truthy
+
+        expect(@mailing.logs.scheduled.count).to eq(0)
+        expect(@mailing.logs.processed.count).to eq(0)
+
+        @mailing.run
+
+        expect(@mailing.logs.scheduled.count).to eq(0)
+        expect(@mailing.logs.processed.count).to eq(0)
       end
 
       it "should be delivered" do
         subscription = @mailing.subscription_for(@entity)
 
-<<<<<<< HEAD
-        expect(RoRmaily::Subscription.count).to eq(1)
-        expect(RoRmaily::Log.delivered.count).to eq(0)
-=======
         expect(MailyHerald::Subscription.count).to eq(1)
         expect(MailyHerald::Log.delivered.count).to eq(0)
-        expect(@mailing.logs.scheduled.count).to eq(1)
->>>>>>> 1aa39a0... Introducing AdHocMailer
 
-        subscription.should be_kind_of(RoRmaily::Subscription)
+        subscription.should be_kind_of(MailyHerald::Subscription)
 
         @mailing.conditions_met?(@entity).should be_truthy
         @mailing.processable?(@entity).should be_truthy
-        @mailing.mailer_name.should eq(:generic)
+
+        @mailing.schedule_delivery_to_all Time.now - 5
 
         ret = @mailing.run
         ret.should be_a(Array)
@@ -45,10 +53,10 @@ describe RoRmaily::OneTimeMailing do
         ret.first.should be_delivered
         ret.first.mail.should be_a(Mail::Message)
 
-        RoRmaily::Subscription.count.should eq(1)
-        RoRmaily::Log.delivered.count.should eq(1)
+        MailyHerald::Subscription.count.should eq(1)
+        MailyHerald::Log.delivered.count.should eq(1)
 
-        log = RoRmaily::Log.delivered.first
+        log = MailyHerald::Log.delivered.first
         log.entity.should eq(@entity)
         log.mailing.should eq(@mailing)
         log.entity_email.should eq(@entity.email)
@@ -56,42 +64,46 @@ describe RoRmaily::OneTimeMailing do
     end
 
     describe "single entity delivery" do
-<<<<<<< HEAD
       before(:each) do
-        @mailing = RoRmaily.one_time_mailing(:test_mailing)
-        @mailing.should be_a RoRmaily::OneTimeMailing
+        @mailing = MailyHerald.ad_hoc_mailing(:ad_hoc_mail)
+        @mailing.should be_a MailyHerald::AdHocMailing
         @mailing.should_not be_a_new_record
       end
 
-      it "should be delivered" do
-        RoRmaily::Log.delivered.count.should eq(0)
-        msg = TestMailer.sample_mail(@entity).deliver
+      it "should not be delivered without explicit scheduling" do
+        MailyHerald::Log.delivered.count.should eq(0)
+        msg = AdHocMailer.ad_hoc_mail(@entity).deliver
         msg.should be_a(Mail::Message)
-        RoRmaily::Log.delivered.count.should eq(1)
+        MailyHerald::Log.delivered.count.should eq(0)
+      end
+
+      it "should be delivered" do
+        MailyHerald::Log.delivered.count.should eq(0)
+
+        @mailing.schedule_delivery_to @entity, Time.now - 5
+
+        msg = AdHocMailer.ad_hoc_mail(@entity).deliver
+
+        msg.should be_a(Mail::Message)
+        MailyHerald::Log.delivered.count.should eq(1)
       end
 
       it "should not be delivered if subscription inactive" do
+        @mailing.schedule_delivery_to @entity, Time.now - 5
+
         @list.unsubscribe!(@entity)
-        RoRmaily::Log.delivered.count.should eq(0)
-        TestMailer.sample_mail(@entity).deliver
-        RoRmaily::Log.delivered.count.should eq(0)
-=======
-      it "should not be possible via Mailer" do
-        MailyHerald::Log.delivered.count.should eq(0)
-
-        schedule = MailyHerald.dispatch(:one_time_mail).schedule_for(@entity)
-        schedule.update_attribute(:processing_at, Time.now + 1.day)
-
-        msg = CustomOneTimeMailer.one_time_mail(@entity).deliver
 
         MailyHerald::Log.delivered.count.should eq(0)
->>>>>>> 1aa39a0... Introducing AdHocMailer
+
+        AdHocMailer.ad_hoc_mail(@entity).deliver
+
+        MailyHerald::Log.delivered.count.should eq(0)
       end
     end
 
     describe "with entity outside the scope" do
       before(:each) do
-        @mailing = RoRmaily.one_time_mailing(:test_mailing)
+        @mailing = MailyHerald.ad_hoc_mailing(:ad_hoc_mail)
       end
 
       it "should not process mailings" do
@@ -111,11 +123,7 @@ describe RoRmaily::OneTimeMailing do
 
   describe "with subscription override" do
     before(:each) do
-<<<<<<< HEAD
-      @mailing = RoRmaily.one_time_mailing(:sample_mail)
-=======
-      @mailing = MailyHerald.one_time_mailing(:one_time_mail)
->>>>>>> 1aa39a0... Introducing AdHocMailer
+      @mailing = MailyHerald.ad_hoc_mailing(:ad_hoc_mail)
       @mailing.update_attribute(:override_subscription, true)
     end
 
@@ -123,19 +131,18 @@ describe RoRmaily::OneTimeMailing do
       @mailing.update_attribute(:override_subscription, false)
     end
 
-<<<<<<< HEAD
     it "single mail should be delivered" do
-      RoRmaily::Log.delivered.count.should eq(0)
-=======
-    it "should deliver single mail" do
       MailyHerald::Log.delivered.count.should eq(0)
->>>>>>> 1aa39a0... Introducing AdHocMailer
       @mailing.processable?(@entity).should be_truthy
       @mailing.override_subscription?.should be_truthy
       @mailing.enabled?.should be_truthy
-      msg = CustomOneTimeMailer.one_time_mail(@entity).deliver
+
+      @mailing.schedule_delivery_to @entity, Time.now - 5
+
+      msg = AdHocMailer.ad_hoc_mail(@entity).deliver
       msg.should be_a(Mail::Message)
-      RoRmaily::Log.delivered.count.should eq(1)
+
+      MailyHerald::Log.delivered.count.should eq(1)
     end
   end
 
