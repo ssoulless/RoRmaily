@@ -17,11 +17,6 @@ module RoRmaily
       self.period = d.to_f.days
     end
 
-    # Delivers mailing to given entity.
-    def deliver_to entity
-      super(entity)
-    end
-
     def deliver_with_mailer_to entity
       current_time = Time.now
 
@@ -43,12 +38,18 @@ module RoRmaily
 
     # Sends mailing to all subscribed entities.
     #
-    # Returns array of `Mail::Message`.
+    # Performs actual sending of emails; should be called in background.
+    #
+    # Returns array of {RoRmaily::Log} with actual `Mail::Message` objects stored
+    # in {RoRmaily::Log.mail} attributes.
     def run
       # TODO better scope here to exclude schedules for users outside context scope
-      schedules.where("processing_at <= (?)", Time.now).each do |schedule|
+      schedules.where("processing_at <= (?)", Time.now).collect do |schedule|
         if schedule.entity
-          deliver_to schedule.entity
+          mail = deliver_to schedule.entity
+          schedule.reload
+          schedule.mail = mail
+          schedule
         else
           RoRmaily.logger.log_processing(schedule.mailing, {class: schedule.entity_type, id: schedule.entity_id}, prefix: "Removing schedule for non-existing entity") 
           schedule.destroy
@@ -88,6 +89,8 @@ module RoRmaily
 
     # Sets the delivery schedule for given entity
     #
+    # New schedule will be created or existing one updated.
+    #
     # Schedule is {Log} object of type "schedule".
     def set_schedule_for entity, last_log = nil
       # support entity with joined subscription table for better performance
@@ -118,7 +121,9 @@ module RoRmaily
     end
 
     # Sets delivery schedules of all entities in mailing scope.
-    def update_schedules
+    #
+    # New schedules will be created or existing ones updated.
+    def set_schedules
       self.list.context.scope_with_subscription(self.list, :outer).each do |entity|
         RoRmaily.logger.debug "Updating schedule of #{self} periodical for entity ##{entity.id} #{entity}"
         set_schedule_for entity
@@ -126,7 +131,7 @@ module RoRmaily
     end
 
     def update_schedules_callback
-      Rails.env.test? ? update_schedules : RoRmaily::ScheduleUpdater.perform_in(10.seconds, self.id)
+      Rails.env.test? ? set_schedules : RoRmaily::ScheduleUpdater.perform_in(10.seconds, self.id)
     end
 
     # Returns {Log} object which is the delivery schedule for given entity.

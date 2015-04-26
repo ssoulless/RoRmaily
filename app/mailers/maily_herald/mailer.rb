@@ -24,7 +24,6 @@ module RoRmaily
         mailing = mail.ror_maily_data[:mailing]
         entity = mail.ror_maily_data[:entity]
 
-
         if mailing && entity
           mailing.deliver_with_mailer_to(entity) do
             ActiveSupport::Notifications.instrument("deliver.action_mailer") do |payload|

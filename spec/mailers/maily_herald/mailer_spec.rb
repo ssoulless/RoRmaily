@@ -3,7 +3,7 @@ require 'spec_helper'
 describe RoRmaily::Mailer do
   before(:each) do
     @entity = FactoryGirl.create :user
-    @mailing = RoRmaily.dispatch(:sample_mail)
+    @mailing = RoRmaily.dispatch(:one_time_mail)
     @list = @mailing.list
   end
 
@@ -11,7 +11,7 @@ describe RoRmaily::Mailer do
     it "should not deliver" do
       RoRmaily::Log.delivered.count.should eq(0)
 
-      TestMailer.sample_mail(@entity).deliver
+      CustomOneTimeMailer.one_time_mail(@entity).deliver
 
       RoRmaily::Log.delivered.count.should eq(0)
     end
@@ -25,7 +25,7 @@ describe RoRmaily::Mailer do
     it "should deliver" do
       RoRmaily::Log.delivered.count.should eq(0)
 
-      TestMailer.sample_mail(@entity).deliver
+      CustomOneTimeMailer.one_time_mail(@entity).deliver
 
       RoRmaily::Log.delivered.count.should eq(1)
     end
