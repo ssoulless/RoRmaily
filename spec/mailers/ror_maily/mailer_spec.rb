@@ -9,11 +9,11 @@ describe RoRmaily::Mailer do
 
   describe "without subscription" do
     it "should not deliver" do
-      RoRmaily::Log.delivered.count.should eq(0)
+      expect(RoRmaily::Log.delivered.count).to eq(0)
 
       CustomOneTimeMailer.one_time_mail(@entity).deliver
 
-      RoRmaily::Log.delivered.count.should eq(0)
+      expect(RoRmaily::Log.delivered.count).to eq(0)
     end
   end
 
@@ -23,11 +23,11 @@ describe RoRmaily::Mailer do
     end
 
     it "should deliver" do
-      RoRmaily::Log.delivered.count.should eq(0)
+      expect(RoRmaily::Log.delivered.count).to eq(0)
 
       CustomOneTimeMailer.one_time_mail(@entity).deliver
 
-      RoRmaily::Log.delivered.count.should eq(1)
+      expect(RoRmaily::Log.delivered.count).to eq(1)
     end
   end
 

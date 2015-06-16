@@ -9,10 +9,10 @@ describe RoRmaily::SequenceMailing do
   describe "Validations" do
     it do
       @mailing.absolute_delay = nil
-      @mailing.should_not be_valid
+      expect(@mailing).not_to be_valid
 
       @mailing.absolute_delay = ""
-      @mailing.should_not be_valid
+      expect(@mailing).not_to be_valid
     end
   end
 end

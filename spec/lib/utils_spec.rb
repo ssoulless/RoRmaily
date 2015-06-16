@@ -34,19 +34,10 @@ describe RoRmaily::Utils do
         expect {@mailing.conditions_met?(@user)}.not_to raise_error
       end
 
-      it "should evaluate more complex conditions" do
-        expect(@user.weekly_notifications).to be_truthy
-
-        @mailing.conditions = "user.weekly_notifications == true"
-        @evaluator.evaluate_conditions(@mailing.conditions).should be_truthy
-        expect {@mailing.conditions_met?(@user)}.not_to raise_error
-
-        @mailing.conditions = "user.weekly_notifications == false"
-        @evaluator.evaluate_conditions(@mailing.conditions).should be_falsy
-        expect {@mailing.conditions_met?(@user)}.not_to raise_error
-
-        @user.weekly_notifications = false
-        expect(@user.weekly_notifications).to be_falsy
+    it "should provide model conditions syntax validation" do
+      @mailing.conditions = "foo bar"
+      expect(@mailing).not_to be_valid
+    end
 
         @mailing.conditions = "user.weekly_notifications == true"
         @evaluator.evaluate_conditions(@mailing.conditions).should be_falsy

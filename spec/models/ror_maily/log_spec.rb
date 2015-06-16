@@ -9,14 +9,14 @@ describe RoRmaily::Log do
   describe "Associations" do
     it "should have proper scopes" do
       log = RoRmaily::Log.create_for @mailing, @entity, {status: :delivered}
-      log.should be_valid
-      log.entity.should eq(@entity)
-      log.mailing.should eq(@mailing)
+      expect(log).to be_valid
+      expect(log.entity).to eq(@entity)
+      expect(log.mailing).to eq(@mailing)
 
-      RoRmaily::Log.for_entity(@entity).should include(log)
-      RoRmaily::Log.for_mailing(@mailing).should include(log)
+      expect(RoRmaily::Log.for_entity(@entity)).to include(log)
+      expect(RoRmaily::Log.for_mailing(@mailing)).to include(log)
 
-      RoRmaily::Log.for_entity(@entity).for_mailing(@mailing).last.should eq(log)
+      expect(RoRmaily::Log.for_entity(@entity).for_mailing(@mailing).last).to eq(log)
     end
   end
 
@@ -26,11 +26,11 @@ describe RoRmaily::Log do
     expect(RoRmaily::Log.count).to eq(2)
 
     log1.update_attribute(:status, :skipped)
-    RoRmaily::Log.count.should eq(2)
-    RoRmaily::Log.skipped.count.should eq(1)
+    expect(RoRmaily::Log.count).to eq(2)
+    expect(RoRmaily::Log.skipped.count).to eq(1)
 
     log1.update_attribute(:status, :error)
-    RoRmaily::Log.count.should eq(2)
-    RoRmaily::Log.error.count.should eq(1)
+    expect(RoRmaily::Log.count).to eq(2)
+    expect(RoRmaily::Log.error.count).to eq(1)
   end
 end
