@@ -2,16 +2,16 @@ module RoRmaily
   class Mailer < ActionMailer::Base
     attr_reader :entity
 
-    def generic entity, mailing
-      destination = mailing.destination(entity)
-      subject = mailing.render_subject(entity)
-      content = mailing.render_template(entity)
+    def generic entity
+      destination = @ror_maily_mailing.destination(entity)
+      subject = @ror_maily_mailing.render_subject(entity)
+      content = @ror_maily_mailing.render_template(entity)
 
       opts = {
         to: destination, 
         subject: subject
       }
-      opts[:from] = mailing.from if mailing.from.present?
+      opts[:from] = @ror_maily_mailing.from if @ror_maily_mailing.from.present?
 
       mail(opts) do |format|
         format.text { render text: content }
@@ -23,9 +23,10 @@ module RoRmaily
       def deliver_mail(mail) #:nodoc:
         mailing = mail.ror_maily_data[:mailing]
         entity = mail.ror_maily_data[:entity]
+        schedule = mail.ror_maily_data[:schedule]
 
-        if mailing && entity
-          mailing.deliver_with_mailer_to(entity) do
+        if mailing
+          mailing.send(:deliver_with_mailer, schedule) do
             ActiveSupport::Notifications.instrument("deliver.action_mailer") do |payload|
               self.set_payload_for_mail(payload, mail)
               yield # Let Mail do the delivery actions
@@ -69,20 +70,32 @@ module RoRmaily
         end
       end
 
-      mailing = args[0].to_s == "generic" ? args[2] : RoRmaily.dispatch(args[0])
-      entity = args[1]
+      if args[1].is_a?(RoRmaily::Log)
+        @ror_maily_schedule = args[1]
+        @ror_maily_mailing = @ror_maily_schedule.mailing
+        @ror_maily_entity = @ror_maily_schedule.entity
+      else
+        @ror_maily_mailing = RoRmaily.dispatch(args[0])
+        @ror_maily_entity = args[1]
+
+        if @ror_maily_mailing.respond_to?(:schedule_delivery_to)
+          # Implicitly create schedule for ad hoc delivery when called using Mailer.foo(entity).deliver syntax
+          @ror_maily_schedule = @ror_maily_mailing.schedule_delivery_to(@ror_maily_entity)
+        end
+      end
 
       @_message.ror_maily_data = {
-        mailing: mailing,
-        entity: entity,
-        subscription: mailing.subscription_for(entity),
+        schedule: @ror_maily_schedule,
+        mailing: @ror_maily_mailing,
+        entity: @ror_maily_entity,
+        subscription: @ror_maily_mailing.subscription_for(@ror_maily_entity),
       }
 
       lookup_context.skip_default_locale!
-      super
+      super(args[0], @ror_maily_entity)
 
-      @_message.to = mailing.destination(entity) unless @_message.to
-      @_message.from = mailing.from unless @_message.from
+      @_message.to = @ror_maily_mailing.destination(@ror_maily_entity) unless @_message.to
+      @_message.from = @ror_maily_mailing.from unless @_message.from
 
       @_message
     end

@@ -3,13 +3,13 @@ require 'spec_helper'
 describe RoRmaily::Sequence do
   before(:each) do
     @sequence = RoRmaily.sequence(:newsletters)
-    expect(@sequence).to be_a RoRmaily::Sequence
-    expect(@sequence).not_to be_a_new_record
-    expect(@sequence.start_at).to eq("user.created_at")
-    expect(@sequence.mailings.length).to eq(3)
+    @sequence.should be_a RoRmaily::Sequence
+    @sequence.should_not be_a_new_record
+    @sequence.start_at.should eq("user.created_at")
+    @sequence.mailings.length.should eq(3)
 
     @list = @sequence.list
-    expect(@list.name).to eq "generic_list"
+    @list.name.should eq "generic_list"
   end
 
   after(:all) do
@@ -24,19 +24,19 @@ describe RoRmaily::Sequence do
 
     it "should find or initialize sequence subscription" do
       subscription = @sequence.subscription_for @entity
-      expect(subscription).to be_valid
-      expect(subscription).not_to be_a_new_record
-      expect(subscription).to be_kind_of(RoRmaily::Subscription)
-      expect(subscription).to be_active
+      subscription.should be_valid
+      subscription.should_not be_a_new_record
+      subscription.should be_a(RoRmaily::Subscription)
+      subscription.should be_active
     end
 
     it "should find or initialize sequence subscription via mailing" do
       subscription = @sequence.mailings.first.subscription_for @entity
-      expect(subscription).to be_valid
-      expect(subscription).not_to be_a_new_record
-      expect(subscription).to be_kind_of(RoRmaily::Subscription)
-      expect(subscription).to eq(@sequence.subscription_for(@entity))
-      expect(subscription).to be_active
+      subscription.should be_valid
+      subscription.should_not be_a_new_record
+      subscription.should be_a(RoRmaily::Subscription)
+      subscription.should eq(@sequence.subscription_for(@entity))
+      subscription.should be_active
     end
   end
 
@@ -81,18 +81,18 @@ describe RoRmaily::Sequence do
     end
 
     it "should parse start_var" do
-      expect(@entity).to be_a(User)
-      expect(@sequence.processed_logs(@entity)).to be_empty
-      expect(@sequence.next_processing_time(@entity)).to be_kind_of(Time)
+      @entity.should be_a(User)
+      @sequence.processed_logs(@entity).should be_empty
+      @sequence.next_processing_time(@entity).should be_a(Time)
     end
 
     it "should use absolute start date if provided and greater that evaluated start date" do
-      expect(@entity).to be_kind_of(User)
+      @entity.should be_a(User)
       time = (@entity.created_at + rand(100).days + rand(24).hours + rand(60).minutes).round
       @sequence.start_at = time.to_s
       @sequence.save
-      expect(@sequence.next_processing_time(@entity)).to be_kind_of(Time)
-      expect(@sequence.next_processing_time(@entity)).to eq(time + @sequence.mailings.first.absolute_delay)
+      @sequence.next_processing_time(@entity).should be_a(Time)
+      @sequence.next_processing_time(@entity).should eq(time + @sequence.mailings.first.absolute_delay)
 
       @subscription = @sequence.subscription_for(@entity)
     end
@@ -113,210 +113,216 @@ describe RoRmaily::Sequence do
     end
 
     it "should deliver mailings with delays" do
-      expect(@sequence.mailings.length).to eq(3)
-      #@sequence.start).to be_nil
+      @sequence.mailings.length.should eq(3)
+      #@sequence.start.should be_nil
 
-      expect(@sequence.processed_mailings(@entity).length).to eq(0)
-      expect(@sequence.pending_mailings(@entity).length).to eq(@sequence.mailings.length)
-      expect(@sequence.next_mailing(@entity).absolute_delay).not_to eq(0)
-      expect(@sequence.next_processing_time(@entity).round).to eq((@entity.created_at + @sequence.mailings.first.absolute_delay).round)
-      expect(@subscription).not_to be_a_new_record
-      expect(@subscription).to be_active
-      #@subscription).to be_processable
-      expect(@subscription).not_to be_a_new_record
+      @sequence.processed_mailings(@entity).length.should eq(0)
+      @sequence.pending_mailings(@entity).length.should eq(@sequence.mailings.length)
+      @sequence.next_mailing(@entity).absolute_delay.should_not eq(0)
+      @sequence.next_processing_time(@entity).round.should eq((@entity.created_at + @sequence.mailings.first.absolute_delay).round)
+      @subscription.should_not be_a_new_record
+      @subscription.should be_active
+      #@subscription.should be_processable
+      @subscription.should_not be_a_new_record
+
+      schedule = @sequence.schedule_for(@entity)
+      expect(schedule).to be_a(RoRmaily::Log)
+      expect(schedule.processing_at.round).to eq((@entity.created_at + @sequence.mailings.first.absolute_delay).round)
 
       Timecop.freeze @entity.created_at
 
       @sequence.run
 
-      expect(RoRmaily::Subscription.count).to eq(1)
-      expect(RoRmaily::Log.delivered.count).to eq(0)
+      RoRmaily::Subscription.count.should eq(1)
+      RoRmaily::Log.delivered.count.should eq(0)
 
       Timecop.freeze @entity.created_at + @sequence.mailings.first.absolute_delay
 
       @sequence.run
 
-      expect(RoRmaily::Subscription.count).to eq(1)
-      expect(RoRmaily::Log.delivered.count).to eq(1)
+      RoRmaily::Subscription.count.should eq(1)
+      schedule.reload
+      expect(schedule.status).to eq(:delivered)
+      RoRmaily::Log.delivered.count.should eq(1)
 
-      expect(@sequence.processed_mailings(@entity).length).to eq(1)
-      expect(@sequence.pending_mailings(@entity).length).to eq(@sequence.mailings.length - 1)
-      expect(@sequence.pending_mailings(@entity).first).to eq(@sequence.mailings[1])
+      @sequence.processed_mailings(@entity).length.should eq(1)
+      @sequence.pending_mailings(@entity).length.should eq(@sequence.mailings.length - 1)
+      @sequence.pending_mailings(@entity).first.should eq(@sequence.mailings[1])
       
-      expect(@sequence.last_processed_mailing(@entity)).to eq @sequence.mailings.first
+      @sequence.last_processed_mailing(@entity).should eq @sequence.mailings.first
       log = @sequence.mailing_processing_log_for(@entity, @sequence.mailings.first)
-      expect(log.processing_at.to_i).to eq (@entity.created_at + @sequence.mailings.first.absolute_delay).to_i
+      log.processing_at.to_i.should eq (@entity.created_at + @sequence.mailings.first.absolute_delay).to_i
 
       Timecop.freeze @entity.created_at + (@sequence.mailings[0].absolute_delay + @sequence.mailings[1].absolute_delay)/2.0
 
       @sequence.run
 
-      expect(RoRmaily::Subscription.count).to eq(1)
-      expect(RoRmaily::Log.delivered.count).to eq(1)
+      RoRmaily::Subscription.count.should eq(1)
+      RoRmaily::Log.delivered.count.should eq(1)
 
       Timecop.freeze @entity.created_at + @sequence.mailings[1].absolute_delay
 
       @sequence.run
 
-      expect(RoRmaily::Subscription.count).to eq(1)
-      expect(RoRmaily::Log.delivered.count).to eq(2) 
+      RoRmaily::Subscription.count.should eq(1)
+      RoRmaily::Log.delivered.count.should eq(2) 
 
       log = @sequence.mailing_processing_log_for(@entity, @sequence.mailings.first)
-      expect(log).to be_kind_of(RoRmaily::Log)
-      expect(log.entity).to eq(@entity)
+      log.should be_a(RoRmaily::Log)
+      log.entity.should eq(@entity)
 
       log = @sequence.mailing_processing_log_for(@entity, @sequence.mailings[1])
-      expect(log).to be_kind_of(RoRmaily::Log)
-      expect(log.entity).to eq(@entity)
-      expect(log.entity_email).to eq(@entity.email)
+      log.should be_a(RoRmaily::Log)
+      log.entity.should eq(@entity)
+      log.entity_email.should eq(@entity.email)
     end
 
     it "should handle processing with start date evaluated to the past date" do
-      expect(@sequence.mailings.length).to eq(3)
-      #expect(@sequence.start).to be_nil
+      @sequence.mailings.length.should eq(3)
+      #@sequence.start.should be_nil
 
       start_at = @entity.created_at.round + 1.year
 
-      expect(@sequence.processed_mailings(@entity).length).to eq(0)
-      expect(@sequence.pending_mailings(@entity).length).to eq(@sequence.mailings.length)
-      expect(@sequence.next_mailing(@entity).absolute_delay).not_to eq(0)
-      expect(@sequence.next_processing_time(@entity).round).to eq((@entity.created_at + @sequence.mailings.first.absolute_delay).round)
+      @sequence.processed_mailings(@entity).length.should eq(0)
+      @sequence.pending_mailings(@entity).length.should eq(@sequence.mailings.length)
+      @sequence.next_mailing(@entity).absolute_delay.should_not eq(0)
+      @sequence.next_processing_time(@entity).round.should eq((@entity.created_at + @sequence.mailings.first.absolute_delay).round)
 
       Timecop.freeze start_at
 
       @sequence.run
 
-      expect(RoRmaily::Subscription.count).to eq(1)
-      expect(RoRmaily::Log.delivered.count).to eq(1)
+      RoRmaily::Subscription.count.should eq(1)
+      RoRmaily::Log.delivered.count.should eq(1)
 
       Timecop.freeze start_at + 1
 
       @sequence.run
 
-      expect(RoRmaily::Subscription.count).to eq(1)
-      expect(RoRmaily::Log.delivered.count).to eq(1)
+      RoRmaily::Subscription.count.should eq(1)
+      RoRmaily::Log.delivered.count.should eq(1)
 
-      expect(@sequence.next_processing_time(@entity).to_i).to eq((start_at - @sequence.mailings.first.absolute_delay + @sequence.pending_mailings(@entity).first.absolute_delay).to_i)
+      @sequence.next_processing_time(@entity).to_i.should eq((start_at - @sequence.mailings.first.absolute_delay + @sequence.pending_mailings(@entity).first.absolute_delay).to_i)
       Timecop.freeze start_at - @sequence.mailings.first.absolute_delay + @sequence.pending_mailings(@entity).first.absolute_delay
 
       @sequence.run
 
-      expect(RoRmaily::Subscription.count).to eq(1)
-      expect(RoRmaily::Log.delivered.count).to eq(2)
+      RoRmaily::Subscription.count.should eq(1)
+      RoRmaily::Log.delivered.count.should eq(2)
     end
 
     it "should calculate delivery times relatively based on existing logs" do
-      expect(@sequence.mailings.length).to eq(3)
-      #expect(@sequence.start).to be_nil
+      @sequence.mailings.length.should eq(3)
+      #@sequence.start.should be_nil
 
       Timecop.freeze @entity.created_at + @sequence.mailings[0].absolute_delay
 
       @sequence.run
 
-      expect(RoRmaily::Log.delivered.count).to eq(1)
+      RoRmaily::Log.delivered.count.should eq(1)
 
       Timecop.freeze @entity.created_at + @sequence.mailings[2].absolute_delay
 
       @sequence.run
       @sequence.run
 
-      expect(RoRmaily::Log.delivered.count).to eq(2)
+      RoRmaily::Log.delivered.count.should eq(2)
 
       Timecop.freeze @entity.created_at + @sequence.mailings[2].absolute_delay + (@sequence.mailings[2].absolute_delay - @sequence.mailings[1].absolute_delay)
 
       @sequence.run
 
-      expect(RoRmaily::Log.delivered.count).to eq(3)
+      RoRmaily::Log.delivered.count.should eq(3)
     end
 
     it "should skip disabled mailings and go on with processing" do
-      expect(@sequence.mailings.length).to eq(3)
-      #expect(@sequence.start).to be_nil
-      expect(@sequence).to be_enabled
+      @sequence.mailings.length.should eq(3)
+      #@sequence.start.should be_nil
+      @sequence.should be_enabled
 
-      expect(@sequence.mailings[0]).to be_enabled
-      expect(@sequence.mailings[1]).to be_enabled
-      expect(@sequence.mailings[2]).to be_enabled
+      @sequence.mailings[0].should be_enabled
+      @sequence.mailings[1].should be_enabled
+      @sequence.mailings[2].should be_enabled
 
       @sequence.mailings[1].disable!
-      expect(@sequence.mailings[1]).not_to be_enabled
+      @sequence.mailings[1].should_not be_enabled
 
-      expect(@sequence.pending_mailings(@entity).first).to eq(@sequence.mailings.first)
-      expect(@sequence.pending_mailings(@entity).first).to be_enabled
+      @sequence.pending_mailings(@entity).first.should eq(@sequence.mailings.first)
+      @sequence.pending_mailings(@entity).first.should be_enabled
 
       Timecop.freeze @entity.created_at + @sequence.pending_mailings(@entity).first.absolute_delay
 
       @sequence.run
 
-      expect(RoRmaily::Log.delivered.count).to eq(1)
-      expect(@sequence.processed_mailings(@entity).length).to eq(1)
+      RoRmaily::Log.delivered.count.should eq(1)
+      @sequence.processed_mailings(@entity).length.should eq(1)
 
-      expect(@sequence.pending_mailings(@entity)).not_to include(@sequence.mailings[1])
-      expect(@sequence.next_mailing(@entity)).to eq(@sequence.mailings[2])
+      @sequence.pending_mailings(@entity).should_not include(@sequence.mailings[1])
+      @sequence.next_mailing(@entity).should eq(@sequence.mailings[2])
 
       Timecop.freeze @entity.created_at + @sequence.mailings[2].absolute_delay
 
       @sequence.run
 
-      expect(RoRmaily::Log.delivered.count).to eq(2)
-      expect(@sequence.pending_mailings(@entity)).to be_empty
+      RoRmaily::Log.delivered.count.should eq(2)
+      @sequence.pending_mailings(@entity).should be_empty
     end
 
     it "should skip mailings with unmet conditions and create logs for them" do
       @sequence.mailings[1].update_attribute(:conditions, "false")
 
-      expect(@sequence.pending_mailings(@entity).first).to eq(@sequence.mailings.first)
+      @sequence.pending_mailings(@entity).first.should eq(@sequence.mailings.first)
       Timecop.freeze @entity.created_at + @sequence.pending_mailings(@entity).first.absolute_delay
       @sequence.run
-      expect(RoRmaily::Log.processed.count).to eq(1)
-      expect(RoRmaily::Log.delivered.count).to eq(1)
-      expect(RoRmaily::Log.skipped.count).to eq(0)
-      expect(RoRmaily::Log.error.count).to eq(0)
+      RoRmaily::Log.processed.count.should eq(1)
+      RoRmaily::Log.delivered.count.should eq(1)
+      RoRmaily::Log.skipped.count.should eq(0)
+      RoRmaily::Log.error.count.should eq(0)
 
-      expect(@sequence.pending_mailings(@entity).first).to eq(@sequence.mailings[1])
+      @sequence.pending_mailings(@entity).first.should eq(@sequence.mailings[1])
       Timecop.freeze @entity.created_at + @sequence.pending_mailings(@entity).first.absolute_delay
       @sequence.run
-      expect(RoRmaily::Log.processed.count).to eq(2)
-      expect(RoRmaily::Log.delivered.count).to eq(1)
-      expect(RoRmaily::Log.skipped.count).to eq(1)
-      expect(RoRmaily::Log.error.count).to eq(0)
+      RoRmaily::Log.processed.count.should eq(2)
+      RoRmaily::Log.delivered.count.should eq(1)
+      RoRmaily::Log.skipped.count.should eq(1)
+      RoRmaily::Log.error.count.should eq(0)
 
-      expect(@sequence.pending_mailings(@entity).first).to eq(@sequence.mailings[2])
+      @sequence.pending_mailings(@entity).first.should eq(@sequence.mailings[2])
       Timecop.freeze @entity.created_at + @sequence.pending_mailings(@entity).first.absolute_delay
       @sequence.run
-      expect(RoRmaily::Log.processed.count).to eq(3)
-      expect(RoRmaily::Log.delivered.count).to eq(2)
-      expect(RoRmaily::Log.skipped.count).to eq(1)
-      expect(RoRmaily::Log.error.count).to eq(0)
+      RoRmaily::Log.processed.count.should eq(3)
+      RoRmaily::Log.delivered.count.should eq(2)
+      RoRmaily::Log.skipped.count.should eq(1)
+      RoRmaily::Log.error.count.should eq(0)
     end
 
     pending "should skip mailings with errors and create logs for them" do
       @sequence.mailings[1].update_attribute(:template, "foo {{error =! here bar")
 
-      expect(@sequence.pending_mailings(@entity).first).to eq(@sequence.mailings.first)
-      expect(@sequence.processable?(@entity)).to be_truthy
+      @sequence.pending_mailings(@entity).first.should eq(@sequence.mailings.first)
+      @sequence.processable?(@entity).should be_truthy
       Timecop.freeze @entity.created_at + @sequence.pending_mailings(@entity).first.absolute_delay
       @sequence.run
-      expect(RoRmaily::Log.processed.count).to eq(1)
-      expect(RoRmaily::Log.delivered.count).to eq(1)
-      expect(RoRmaily::Log.skipped.count).to eq(0)
-      expect(RoRmaily::Log.error.count).to eq(0)
+      RoRmaily::Log.processed.count.should eq(1)
+      RoRmaily::Log.delivered.count.should eq(1)
+      RoRmaily::Log.skipped.count.should eq(0)
+      RoRmaily::Log.error.count.should eq(0)
 
-      expect(@sequence.pending_mailings(@entity).first).to eq(@sequence.mailings[1])
+      @sequence.pending_mailings(@entity).first.should eq(@sequence.mailings[1])
       Timecop.freeze @entity.created_at + @sequence.pending_mailings(@entity).first.absolute_delay
       @sequence.run
-      expect(RoRmaily::Log.processed.count).to eq(2)
-      expect(RoRmaily::Log.delivered.count).to eq(1)
-      expect(RoRmaily::Log.skipped.count).to eq(0)
-      expect(RoRmaily::Log.error.count).to eq(1)
+      RoRmaily::Log.processed.count.should eq(2)
+      RoRmaily::Log.delivered.count.should eq(1)
+      RoRmaily::Log.skipped.count.should eq(0)
+      RoRmaily::Log.error.count.should eq(1)
 
-      expect(@sequence.pending_mailings(@entity).first).to eq(@sequence.mailings[2])
+      @sequence.pending_mailings(@entity).first.should eq(@sequence.mailings[2])
       Timecop.freeze @entity.created_at + @sequence.pending_mailings(@entity).first.absolute_delay
       @sequence.run
-      expect(RoRmaily::Log.processed.count).to eq(3)
-      expect(RoRmaily::Log.delivered.count).to eq(2)
-      expect(RoRmaily::Log.skipped.count).to eq(0)
-      expect(RoRmaily::Log.error.count).to eq(1)
+      RoRmaily::Log.processed.count.should eq(3)
+      RoRmaily::Log.delivered.count.should eq(2)
+      RoRmaily::Log.skipped.count.should eq(0)
+      RoRmaily::Log.error.count.should eq(1)
     end
 
   end
@@ -334,36 +340,36 @@ describe RoRmaily::Sequence do
     end
 
     it "should handle start_var parsing errors or nil start time" do
-      expect(@sequence.start_at).to eq("")
+      @sequence.start_at.should eq("")
       @sequence = @sequence.subscription_for @entity
-      expect(@sequence.last_processing_time(@entity)).to be_nil
-      expect(@sequence.next_processing_time(@entity)).to be_nil
+      @sequence.last_processing_time(@entity).should be_nil
+      @sequence.next_processing_time(@entity).should be_nil
 
       Timecop.freeze @entity.created_at
       @sequence.run
 
       @sequence = @sequence.subscription_for @entity
-      expect(@sequence.last_processing_time(@entity)).to be_nil
-      expect(@sequence.next_processing_time(@entity)).to be_nil
+      @sequence.last_processing_time(@entity).should be_nil
+      @sequence.next_processing_time(@entity).should be_nil
     end
 
     pending "should allow to set start date via text field" do
       datetime = "2013-01-01 10:11"
 
       @sequence.start_at = datetime
-      expect(@sequence).to be_valid
-      expect(@sequence.start_at).to eq(datetime)
+      @sequence.should be_valid
+      @sequence.start_at.should eq(datetime)
 
       @sequence.start_at = ""
-      expect(@sequence).to be_valid
+      @sequence.should be_valid
     end
   end
 
   #describe "Without autosubscribe" do
     #before(:each) do
       #@sequence.update_attribute(:autosubscribe, false)
-      #expect(@sequence).to be_valid
-      #expect(@sequence.save).to be_truthy
+      #@sequence.should be_valid
+      #@sequence.save.should be_truthy
       #@entity = FactoryGirl.create :user
     #end
 
@@ -374,17 +380,17 @@ describe RoRmaily::Sequence do
     #it "should create inactive subscription" do
       #subscription = @sequence.subscription_for @entity
 
-      #expect(RoRmaily::MailingSubscription.count).to eq(0)
-      #expect(RoRmaily::SequenceSubscription.count).to eq(1)
-      #expect(RoRmaily::Log.count).to eq(0)
+      #RoRmaily::MailingSubscription.count.should eq(0)
+      #RoRmaily::SequenceSubscription.count.should eq(1)
+      #RoRmaily::Log.count.should eq(0)
 
       #Timecop.freeze @entity.created_at
 
       #@sequence.run
 
-      #expect(RoRmaily::MailingSubscription.count).to eq(0)
-      #expect(RoRmaily::SequenceSubscription.count).to eq(1)
-      #expect(RoRmaily::Log.count).to eq(0)
+      #RoRmaily::MailingSubscription.count.should eq(0)
+      #RoRmaily::SequenceSubscription.count.should eq(1)
+      #RoRmaily::Log.count.should eq(0)
     #end
   #end
 
@@ -400,29 +406,29 @@ describe RoRmaily::Sequence do
     it "should be able to override subscription" do
       subscription = @sequence.subscription_for @entity
 
-      expect(subscription).to be_active
+      subscription.should be_active
 
       next_processing = @sequence.next_processing_time(@entity)
 
       subscription.deactivate!
-      expect(subscription).not_to be_active
+      subscription.should_not be_active
 
-      expect(@sequence.logs(@entity).count).to eq(0)
-      expect(@sequence.last_processing_time(@entity)).to be_nil
+      @sequence.logs(@entity).count.should eq(0)
+      @sequence.last_processing_time(@entity).should be_nil
 
       Timecop.freeze next_processing
 
       @sequence.run
 
-      expect(@sequence.logs(@entity).count).to eq(0)
-      expect(@sequence.last_processing_time(@entity)).to be_nil
+      @sequence.logs(@entity).count.should eq(0)
+      @sequence.last_processing_time(@entity).should be_nil
 
       @sequence.update_attribute(:override_subscription, true)
 
       @sequence.run
 
-      expect(@sequence.logs(@entity).count).to eq(1)
-      expect(@sequence.last_processing_time(@entity).to_i).to eq(next_processing.to_i)
+      @sequence.logs(@entity).count.should eq(1)
+      @sequence.last_processing_time(@entity).to_i.should eq(next_processing.to_i)
     end
   end
 
