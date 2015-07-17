@@ -4,20 +4,20 @@ describe RoRmaily::Mailing do
   describe "Validations" do
     it "should validate template syntax" do
       @mailing = RoRmaily.one_time_mailing :test_mailing
-      expect(@mailing).to be_valid
+      @mailing.should be_valid
       @mailing.template = "foo {{ bar"
-      expect(@mailing).not_to be_valid
-      expect(@mailing.errors.messages.keys).to include(:template)
-      expect(@mailing.errors.messages[:template]).not_to be_empty
+      @mailing.should_not be_valid
+      @mailing.errors.messages.keys.should include(:template)
+      @mailing.errors.messages[:template].should_not be_empty
     end
 
     it "should validate conditions syntax" do
       @mailing = RoRmaily.one_time_mailing :test_mailing
-      expect(@mailing).to be_valid
+      @mailing.should be_valid
       @mailing.conditions = "foo {{ bar"
-      expect(@mailing).not_to be_valid
-      expect(@mailing.errors.messages.keys).to include(:conditions)
-      expect(@mailing.errors.messages[:conditions]).not_to be_empty
+      @mailing.should_not be_valid
+      @mailing.errors.messages.keys.should include(:conditions)
+      @mailing.errors.messages[:conditions].should_not be_empty
     end
   end
   
@@ -25,6 +25,7 @@ describe RoRmaily::Mailing do
     it "should produce valiadtion errors" do
       @mailing = RoRmaily.dispatch :locked_mailing
       expect(@mailing).to be_locked
+      @mailing.title = "foo"
       expect(@mailing.save).to be_falsy
       expect(@mailing.errors.messages).to include(:base)
       @mailing.destroy

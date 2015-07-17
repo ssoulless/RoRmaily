@@ -25,7 +25,12 @@ module RoRmaily
         entity = mail.ror_maily_data[:entity]
         schedule = mail.ror_maily_data[:schedule]
 
-        if mailing
+        if !schedule && mailing.respond_to?(:schedule_delivery_to)
+          # Implicitly create schedule for ad hoc delivery when called using Mailer.foo(entity).deliver syntax
+          schedule = mail.ror_maily_data[:schedule] = mailing.schedule_delivery_to(entity)
+        end
+
+        if schedule
           mailing.send(:deliver_with_mailer, schedule) do
             ActiveSupport::Notifications.instrument("deliver.action_mailer") do |payload|
               self.set_payload_for_mail(payload, mail)
@@ -34,12 +39,12 @@ module RoRmaily
             mail
           end
         else
-          RoRmaily.logger.log_processing(mailing, entity, mail, prefix: "Delivery outside Maily")
+          #RoRmaily.logger.log_processing(mailing, entity, mail, prefix: "Delivery outside Maily")
 
-          ActiveSupport::Notifications.instrument("deliver.action_mailer") do |payload|
-            self.set_payload_for_mail(payload, mail)
-            yield # Let Mail do the delivery actions
-          end
+          #ActiveSupport::Notifications.instrument("deliver.action_mailer") do |payload|
+            #self.set_payload_for_mail(payload, mail)
+            #yield # Let Mail do the delivery actions
+          #end
         end
       end
     end
@@ -75,13 +80,8 @@ module RoRmaily
         @ror_maily_mailing = @ror_maily_schedule.mailing
         @ror_maily_entity = @ror_maily_schedule.entity
       else
-        @ror_maily_mailing = RoRmaily.dispatch(args[0])
+        @ror_maily_mailing = args[0].to_s == "generic" ? args[2] : RoRmaily.dispatch(args[0])
         @ror_maily_entity = args[1]
-
-        if @ror_maily_mailing.respond_to?(:schedule_delivery_to)
-          # Implicitly create schedule for ad hoc delivery when called using Mailer.foo(entity).deliver syntax
-          @ror_maily_schedule = @ror_maily_mailing.schedule_delivery_to(@ror_maily_entity)
-        end
       end
 
       @_message.ror_maily_data = {

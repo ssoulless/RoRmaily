@@ -18,6 +18,8 @@ module RoRmaily
     has_many :dispatches, class_name: "RoRmaily::Dispatch"
     has_many :subscriptions, class_name: "RoRmaily::Subscription"
 
+    validates :context, presence: true
+
     validate do |list|
       list.errors.add(:base, "Can't change this list because it is locked.") if list.locked?
     end
@@ -53,14 +55,15 @@ module RoRmaily
 
     # Checks whether entity is subscribed to List.
     def subscribed? entity
-      subscription_for(entity).try(:active?)
+      s = Subscription.get_from(entity) || subscription_for(entity)
+      .try(:active?)
     end
 
     # Checks whether entity is not subscribed to List.
     #
     # True if user has inactive subscription or never been subscribed.
     def unsubscribed? entity
-      s = subscription_for(entity)
+      s = Subscription.get_from(entity) || subscription_for(entity)
       s ? !s.active? : true
     end
 
