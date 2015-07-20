@@ -189,7 +189,13 @@ module RoRmaily
       entity = schedule.entity
 
       unless processable?(entity)
+<<<<<<< HEAD:app/models/ror_maily/mailing.rb
         RoRmaily.logger.log_processing(self, entity, prefix: "Not processable", level: :debug) 
+=======
+        # Most likely the entity went out of the context scope.
+        # Let's leave the log for now just in case it comes back into the scope.
+        MailyHerald.logger.log_processing(self, entity, prefix: "Not processable", level: :debug) 
+>>>>>>> f885e95... Fix subscription status checking:app/models/maily_herald/mailing.rb
         return 
       end
 
