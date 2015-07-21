@@ -38,6 +38,21 @@ module RoRmaily
     end
   end
 
+  class Initializer
+    def initialize klass
+      @klass = klass
+    end
+
+    def method_missing m, *args, &block
+      if %w{list ad_hoc_mailing one_time_mailing periodical_mailing sequence_mailing sequence}.include?(m.to_s)
+        options = args.extract_options!
+        @klass.send m, *args, options.merge(locked: true), &block
+      else
+        @klass.send m, *args, &block
+      end
+    end
+  end
+
   autoload :Utils,              'ror_maily/utils'
   autoload :TemplateRenderer,   'ror_maily/template_renderer'
   autoload :ModelExtensions,    'ror_maily/model_extensions'
@@ -99,6 +114,14 @@ module RoRmaily
       self.locked_lists.include?(name.to_s)
     end
 
+    def start_at_procs
+      @@start_at_procs ||= {}
+    end
+
+    def conditions_procs
+      @@conditions_procs ||= {}
+    end
+
     # Obtains Redis connection.
     def redis
       @redis ||= begin
@@ -133,11 +156,15 @@ module RoRmaily
     #
     # To be used in initializer file.
     def setup
+<<<<<<< HEAD:lib/ror_maily.rb
       @@contexts ||= {}
 
       logger.warn("Maily migrations seems to be pending. Skipping setup...") && return if ([RoRmaily::Dispatch, RoRmaily::List, RoRmaily::Log, RoRmaily::Subscription].collect(&:table_exists?).select{|v| !v}.length > 0)
+=======
+      logger.warn("Maily migrations seems to be pending. Skipping setup...") && return if ([RoRmaily::Dispatch, RoRmaily::List, RoRmaily::Log, RoRmaily::Subscription].collect(&:table_exists?).select{|v| !v}.length > 0)
+>>>>>>> afc924f... Dispatch locking changes:lib/ror_maily.rb
 
-      yield self
+      yield Initializer.new(self)
     end
 
     # Fetches or defines a {Context}.
@@ -150,6 +177,7 @@ module RoRmaily
     # @param name [Symbol] Identifier name of the Context.
     def context name, &block
       name = name.to_s
+      @@contexts ||= {}
 
       if block_given?
         @@contexts ||= {}
