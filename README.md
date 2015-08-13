@@ -346,15 +346,10 @@ Then of course you need to tell Maily about that too:
 
 ## More Information
 
-* [Home Page](http://RoRmaily.org)
-* [API Docs](http://www.rubydoc.info/gems/ror_maily)
-* [Showcase](http://showcase.sology.eu/ror_maily)
-* [Sample application](https://github.com/Sology/maily_testapp)
-
 For bug reports or feature requests see the [issues on Github](https://github.com/Sology/ror_maily/issues).  
 
 ## License
 
-LGPLv3 License. Copyright 2013-2015 Sology. http://www.sology.eu
+LGPLv3 License. Copyright 2015
 
-Initial development sponsored by Smart Language Apps Limited http://smartlanguageapps.com/
+Initial development sponsored by University of Quincio (http://uniquindio.edu.co)
