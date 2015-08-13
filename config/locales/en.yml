@@ -1,0 +1,8 @@
+en:
+  activerecord:
+    errors:
+      models:
+        ror_maily/subscription:
+          attributes:
+            entity:
+              wrong_type: is different type than defined in context
