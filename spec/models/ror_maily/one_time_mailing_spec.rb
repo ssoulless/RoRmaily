@@ -16,9 +16,9 @@ describe RoRmaily::OneTimeMailing do
     describe "run all delivery" do
       before(:each) do
         @mailing = RoRmaily.one_time_mailing(:test_mailing)
-        @mailing.should be_a RoRmaily::OneTimeMailing
-        @mailing.should_not be_a_new_record
-        @mailing.should be_valid
+        expect(@mailing).to be_kind_of(RoRmaily::OneTimeMailing)
+        expect(@mailing).not_to be_a_new_record
+        expect(@mailing).to be_valid
       end
 
       it "should be delivered only once per user" do
@@ -49,25 +49,25 @@ describe RoRmaily::OneTimeMailing do
         expect(RoRmaily::Log.delivered.count).to eq(0)
         expect(@mailing.logs.scheduled.count).to eq(1)
 
-        subscription.should be_kind_of(RoRmaily::Subscription)
+        expect(subscription).to be_kind_of(RoRmaily::Subscription)
 
-        @mailing.conditions_met?(@entity).should be_truthy
-        @mailing.processable?(@entity).should be_truthy
-        @mailing.mailer_name.should eq(:generic)
+        expect(@mailing.conditions_met?(@entity)).to be_truthy
+        expect(@mailing.processable?(@entity)).to be_truthy
+        expect(@mailing.mailer_name).to eq(:generic)
 
         ret = @mailing.run
-        ret.should be_a(Array)
-        ret.first.should be_a(RoRmaily::Log)
-        ret.first.should be_delivered
-        ret.first.mail.should be_a(Mail::Message)
+        expect(ret).to be_kind_of(Array)
+        expect(ret.first).to be_kind_of(RoRmaily::Log)
+        expect(ret.first).to be_delivered
+        expect(ret.first.mail).to be_kind_of(Mail::Message)
 
-        RoRmaily::Subscription.count.should eq(1)
-        RoRmaily::Log.delivered.count.should eq(1)
+        expect(RoRmaily::Subscription.count).to eq(1)
+        expect(RoRmaily::Log.delivered.count).to eq(1)
 
         log = RoRmaily::Log.delivered.first
-        log.entity.should eq(@entity)
-        log.mailing.should eq(@mailing)
-        log.entity_email.should eq(@entity.email)
+        expect(log.entity).to eq(@entity)
+        expect(log.mailing).to eq(@mailing)
+        expect(log.entity_email).to eq(@entity.email)
       end
 
       it "should handle template errors" do
@@ -87,14 +87,14 @@ describe RoRmaily::OneTimeMailing do
 
     describe "single entity delivery" do
       it "should not be possible via Mailer" do
-        RoRmaily::Log.delivered.count.should eq(0)
+        expect(RoRmaily::Log.delivered.count).to eq(0)
 
         schedule = RoRmaily.dispatch(:one_time_mail).schedule_for(@entity)
         schedule.update_attribute(:processing_at, Time.now + 1.day)
 
         expect{ CustomOneTimeMailer.one_time_mail(@entity).deliver }.not_to change{ActionMailer::Base.deliveries.count}
 
-        RoRmaily::Log.delivered.count.should eq(0)
+        expect(RoRmaily::Log.delivered.count).to eq(0)
       end
     end
 
@@ -129,12 +129,12 @@ describe RoRmaily::OneTimeMailing do
     end
 
     it "should deliver single mail" do
-      RoRmaily::Log.delivered.count.should eq(0)
-      @mailing.processable?(@entity).should be_truthy
-      @mailing.override_subscription?.should be_truthy
-      @mailing.enabled?.should be_truthy
+      expect(RoRmaily::Log.delivered.count).to eq(0)
+      expect(@mailing.processable?(@entity)).to be_truthy
+      expect(@mailing.override_subscription?).to be_truthy
+      expect(@mailing.enabled?).to be_truthy
       @mailing.run
-      RoRmaily::Log.delivered.count.should eq(1)
+      expect(RoRmaily::Log.delivered.count).to eq(1)
     end
   end
 
@@ -162,7 +162,7 @@ describe RoRmaily::OneTimeMailing do
 
       @list.subscribe!(@entity)
 
-      expect(@list.subscription_for(@entity)).to be_a(MailyHerald::Subscription)
+      expect(@list.subscription_for(@entity)).to be_a(RoRmaily::Subscription)
       expect(@list.subscription_for(@entity)).to be_active
       expect(@list.subscribed?(@entity)).to be_truthy
 

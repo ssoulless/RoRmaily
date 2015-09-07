@@ -156,13 +156,7 @@ module RoRmaily
     #
     # To be used in initializer file.
     def setup
-<<<<<<< HEAD:lib/ror_maily.rb
-      @@contexts ||= {}
-
       logger.warn("Maily migrations seems to be pending. Skipping setup...") && return if ([RoRmaily::Dispatch, RoRmaily::List, RoRmaily::Log, RoRmaily::Subscription].collect(&:table_exists?).select{|v| !v}.length > 0)
-=======
-      logger.warn("Maily migrations seems to be pending. Skipping setup...") && return if ([RoRmaily::Dispatch, RoRmaily::List, RoRmaily::Log, RoRmaily::Subscription].collect(&:table_exists?).select{|v| !v}.length > 0)
->>>>>>> afc924f... Dispatch locking changes:lib/ror_maily.rb
 
       yield Initializer.new(self)
     end

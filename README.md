@@ -264,7 +264,6 @@ This code uses standard Action Mailer syntax but instead of sending the email di
 
 ```ruby
 MailyHerald.ad_hoc_mailing(:password_reset).schedule_delivery_to User.first, Time.now
->>>>>>> bf554cc... Update docs
 ```
 
 **That's it!**

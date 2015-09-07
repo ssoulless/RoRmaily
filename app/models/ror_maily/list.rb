@@ -20,6 +20,8 @@ module RoRmaily
 
     validates :context, presence: true
 
+    validates :context, presence: true
+
     validate do |list|
       list.errors.add(:base, "Can't change this list because it is locked.") if list.locked?
     end

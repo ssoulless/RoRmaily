@@ -88,7 +88,7 @@ describe RoRmaily::AdHocMailing do
 
           msg = AdHocMailer.ad_hoc_mail(@entity).deliver
 
-          msg.should be_a(Mail::Message)
+          expect(msg).to be_kind_of(Mail::Message)
           RoRmaily::Log.delivered.count.should eq(1)
         end
 
@@ -97,11 +97,11 @@ describe RoRmaily::AdHocMailing do
 
           @list.unsubscribe!(@entity)
 
-          RoRmaily::Log.delivered.count.should eq(0)
+          expect(RoRmaily::Log.delivered.count).to eq(0)
 
           AdHocMailer.ad_hoc_mail(@entity).deliver
 
-          RoRmaily::Log.delivered.count.should eq(0)
+          expect(RoRmaily::Log.delivered.count).to eq(0)
         end
       end
     end
@@ -153,7 +153,7 @@ describe RoRmaily::AdHocMailing do
 
   describe "preview" do
     before(:each) do
-      @mailing = MailyHerald.ad_hoc_mailing(:ad_hoc_mail)
+      @mailing = RoRmaily.ad_hoc_mailing(:ad_hoc_mail)
       @list.subscribe!(@entity)
     end
 
