@@ -318,6 +318,7 @@ describe RoRmaily::PeriodicalMailing do
 
       expect(RoRmaily::Subscription.count).to eq(1)
       expect(RoRmaily::Log.delivered.count).to eq(1)
+      expect(@mailing.schedule_for(@entity)).not_to be_nil
 
       @entity.update_attribute(:weekly_notifications, false)
       @entity.save
@@ -329,6 +330,7 @@ describe RoRmaily::PeriodicalMailing do
       expect(RoRmaily::Subscription.count).to eq(1)
       expect(RoRmaily::Log.delivered.count).to eq(1)
       expect(RoRmaily::Log.skipped.count).to eq(1)
+      expect(@mailing.schedule_for(@entity)).not_to be_nil
 
       @entity.update_attribute(:weekly_notifications, true)
 
