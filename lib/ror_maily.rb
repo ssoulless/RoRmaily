@@ -34,7 +34,7 @@ module RoRmaily
 
     def perform id
       dispatch = RoRmaily::Dispatch.find(id)
-      dispatch.update_schedules if dispatch.respond_to?(:update_schedules)
+      dispatch.set_schedules if dispatch.respond_to?(:set_schedules)
     end
   end
 
