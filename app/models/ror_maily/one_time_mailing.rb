@@ -115,7 +115,7 @@ module RoRmaily
         if schedule && schedule.processing_at <= current_time && schedule.scheduled?
           schedule = super(schedule)
           if schedule
-            schedule.processing_at = current_time unless schedule.processing_at_changed?
+            schedule.processing_at = current_time if schedule.processed?
             schedule.save!
           end
         end

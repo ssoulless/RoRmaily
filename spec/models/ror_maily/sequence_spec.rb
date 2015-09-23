@@ -435,4 +435,6 @@ describe RoRmaily::Sequence do
     end
   end
 
+  pending "unprocessable mailings - postponing them"
+
 end
