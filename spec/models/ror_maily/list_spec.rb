@@ -54,7 +54,7 @@ describe RoRmaily::List do
   end
 
   it "should be lockable" do
-    @list = RoRmaily.list :locked_list
+    @list = RoRmaily.list :generic_list
     expect(@list).to be_locked
     @list.title = "foo"
     expect(@list.save).to be_falsy
