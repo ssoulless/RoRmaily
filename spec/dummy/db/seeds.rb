@@ -1,4 +1,4 @@
-MailyHerald.one_time_mailing :test_mailing do |mailing|
+RoRmaily.one_time_mailing :test_mailing do |mailing|
   mailing.enable
   mailing.title = "Test mailing"
   mailing.subject = "Test mailing"
@@ -7,7 +7,7 @@ MailyHerald.one_time_mailing :test_mailing do |mailing|
   mailing.template = "User name: {{user.name}}."
 end
 
-MailyHerald.one_time_mailing :one_time_mail do |mailing|
+RoRmaily.one_time_mailing :one_time_mail do |mailing|
   mailing.enable
   mailing.title = "One time mailing"
   mailing.list = :generic_list
@@ -15,7 +15,7 @@ MailyHerald.one_time_mailing :one_time_mail do |mailing|
   mailing.start_at = "user.created_at"
 end
 
-MailyHerald.one_time_mailing :mail_with_error do |mailing|
+RoRmaily.one_time_mailing :mail_with_error do |mailing|
   mailing.enable
   mailing.title = "Mail with error"
   mailing.list = :generic_list
@@ -23,14 +23,14 @@ MailyHerald.one_time_mailing :mail_with_error do |mailing|
   mailing.start_at = "user.created_at"
 end
 
-MailyHerald.ad_hoc_mailing :ad_hoc_mail do |mailing|
+RoRmaily.ad_hoc_mailing :ad_hoc_mail do |mailing|
   mailing.enable
   mailing.title = "Ad hoc mailing"
   mailing.list = :generic_list
   mailing.mailer_name = "AdHocMailer"
 end
 
-MailyHerald.sequence :newsletters do |seq|
+RoRmaily.sequence :newsletters do |seq|
   seq.enable
   seq.title = "Newsletters"
   seq.list = :generic_list
@@ -58,7 +58,7 @@ MailyHerald.sequence :newsletters do |seq|
   end
 end
 
-MailyHerald.periodical_mailing :weekly_summary do |mailing|
+RoRmaily.periodical_mailing :weekly_summary do |mailing|
   mailing.enable
   mailing.title = "Weekly summary"
   mailing.subject = "Weekly summary"

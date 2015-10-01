@@ -27,7 +27,7 @@ module RoRmaily
 
     def self.get_from(entity)
       if entity.has_attribute?(:maily_subscription_id) && entity.maily_subscription_id
-        subscription = MailyHerald::Subscription.new
+        subscription = RoRmaily::Subscription.new
 
         entity.attributes.each do |k, v|
           if match = k.match(/^maily_subscription_(\w+)$/)

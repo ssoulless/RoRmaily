@@ -1,6 +1,6 @@
 # RoRmaily
 
-MailyHerald is a Ruby on Rails gem that helps you sending and managing your application mailings. Think of Maily as a self-hosted Mailchimp alternative you can easily integrate with your site. MailyHerald is great both for email marketing and conducting daily stream of notifications you send to your users.
+RoRmaily is a Ruby on Rails gem that helps you sending and managing your application mailings. Think of Maily as a self-hosted Mailchimp alternative you can easily integrate with your site. RoRmaily is great both for email marketing and conducting daily stream of notifications you send to your users.
 
 With RoRmaily you can send:
 * ad-hoc mailings - arbitrary emails sent to one or more users at given point in time (i.e. special offers, announcements),
@@ -44,7 +44,7 @@ or put in your Gemfile
 
 ## Development state
 
-MailyHerald is relatively young piece of software and  it has been deployed only to few production environments.
+RoRmaily is relatively young piece of software and  it has been deployed only to few production environments.
 
 If you decide to use it, please tell us what you think about it, post some issues on GitHub etc. We're waiting for your feedback.
 
@@ -92,9 +92,9 @@ There's also a possibility to send Mailings without using any of your custom Mai
 
 **Delivery**
 
-MailyHerald uses great gem [Sidekiq](http://sidekiq.org/) to process deliveries in the background. This applies to all kinds of Mailings - their delivieries are scheduled individually for each entity on the subscription list.
+RoRmaily uses great gem [Sidekiq](http://sidekiq.org/) to process deliveries in the background. This applies to all kinds of Mailings - their delivieries are scheduled individually for each entity on the subscription list.
 
-Maily needs to check periodically for scheduled mailings and if their time come - queue them for delivery. This is job for MailyHerald Paperboy - tiny daemon that runs in the background and check the schedules. It is essential to make your mailings work.
+Maily needs to check periodically for scheduled mailings and if their time come - queue them for delivery. This is job for RoRmaily Paperboy - tiny daemon that runs in the background and check the schedules. It is essential to make your mailings work.
 
 ## Usage
 
@@ -166,7 +166,7 @@ config.list :newsletters do |list|
 end
 ```
 
-Newly-created lists are empty by default. Make sure to add entities to them i.e. by using `MailyHerald.subscribe` method.
+Newly-created lists are empty by default. Make sure to add entities to them i.e. by using `RoRmaily.subscribe` method.
 
 **Set up your mailings**
 
@@ -191,11 +191,11 @@ end
 
 **Configuration locking**
 
-By default, all contexts, lists and mailings initialized inside `MailyHerald.setup` block are locked and can't be edited at runtime. This constraint is enforced to maintain the nature of RoR application initializer files. Things set up in the initializer should be always read-only because initializer is executed every time the application spawns.
+By default, all contexts, lists and mailings initialized inside `RoRmaily.setup` block are locked and can't be edited at runtime. This constraint is enforced to maintain the nature of RoR application initializer files. Things set up in the initializer should be always read-only because initializer is executed every time the application spawns.
 
-If you need to set up mailings programatically and make them unlocked, simply just don't use `MailyHerald.setup`. Instead, use methods from `MailyHerald` class directly. You can put your code for example in DB seed file or some rake task.
+If you need to set up mailings programatically and make them unlocked, simply just don't use `RoRmaily.setup`. Instead, use methods from `RoRmaily` class directly. You can put your code for example in DB seed file or some rake task.
 
-You would typically put your `MailyHerald.setup` block in the Maily initializer file. Keep in mind, that this file is evaluated every time Rails boots up so changes made there (i.e. new mailings added) will be reflected at next application launch.
+You would typically put your `RoRmaily.setup` block in the Maily initializer file. Keep in mind, that this file is evaluated every time Rails boots up so changes made there (i.e. new mailings added) will be reflected at next application launch.
 
 ### Different mailing types
 
@@ -311,12 +311,12 @@ Visiting opt-out url disables subscription and by default redirects to "/".
 
 ### Delivery and background processing
 
-MailyHerald mailings are always sent in background. They won't block you application thread - that's guaranteed.
+RoRmaily mailings are always sent in background. They won't block you application thread - that's guaranteed.
 
-In order to make your deliveries work, you need to run MailyHerald Paperboy which will take care of it:
+In order to make your deliveries work, you need to run RoRmaily Paperboy which will take care of it:
 
 ```
-$ bundle exec maily_herald paperboy --start
+$ bundle exec ror_maily paperboy --start
 ```
 
 Paperboy will monitor your mailing schedules and queue their delivery. The actual sending of emails is handled in background as Sidekiq job, so make sure you run Sidekiq along with Paperboy.
@@ -332,14 +332,14 @@ UserMailer.password_reset(User.first).deliver
 This code uses standard Action Mailer syntax but instead of sending the email directly, it basically queues background delivery of ad-hoc mailing named `password_reset` to given user. Alternative Maily syntax is:
 
 ```ruby
-MailyHerald.ad_hoc_mailing(:password_reset).schedule_delivery_to User.first, Time.now
+RoRmaily.ad_hoc_mailing(:password_reset).schedule_delivery_to User.first, Time.now
 ```
 
 **That's it!**
 
 Your Maily setup is now complete.
 
-See [API Docs](http://www.rubydoc.info/gems/maily_herald) for more details about usage and configuration.
+See [API Docs](http://www.rubydoc.info/gems/ror_maily) for more details about usage and configuration.
 
 ## Configuring
 

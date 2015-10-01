@@ -347,7 +347,7 @@ describe RoRmaily::PeriodicalMailing do
     before(:each) do
       @entity = FactoryGirl.create :user
 
-      @mailing = MailyHerald.periodical_mailing(:general_scheduling_mailing) do |mailing|
+      @mailing = RoRmaily.periodical_mailing(:general_scheduling_mailing) do |mailing|
         mailing.enable
         mailing.list = :generic_list
         mailing.subject = "Test mailing"

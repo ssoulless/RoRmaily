@@ -53,7 +53,7 @@ module RoRmaily
     end
 
     def locked?
-      MailyHerald.dispatch_locked?(self.sequence.name)
+      RoRmaily.dispatch_locked?(self.sequence.name)
     end
 
     private

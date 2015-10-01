@@ -1,4 +1,4 @@
-class AdHocMailer < MailyHerald::Mailer
+class AdHocMailer < RoRmaily::Mailer
   default from: "no-reply@mailyherald.org"
 
   def ad_hoc_mail user

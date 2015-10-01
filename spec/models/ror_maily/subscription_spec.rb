@@ -31,7 +31,7 @@ describe RoRmaily::Subscription do
   end
 
   it "should instantiate subscription object from joined attributes" do
-    list = MailyHerald.list(:generic_list)
+    list = RoRmaily.list(:generic_list)
     list.subscribe!(@entity)
 
     entity = list.subscribers.first
@@ -40,9 +40,9 @@ describe RoRmaily::Subscription do
     expect(entity).to have_attribute(:maily_subscription_id)
     expect(entity.maily_subscription_active).to be_truthy
 
-    subscription = MailyHerald::Subscription.get_from(entity)
+    subscription = RoRmaily::Subscription.get_from(entity)
 
-    expect(subscription).to be_a(MailyHerald::Subscription)
+    expect(subscription).to be_a(RoRmaily::Subscription)
     expect(subscription).to be_readonly
     expect(subscription).to be_active
   end

@@ -1,22 +1,22 @@
-module MailyHerald
+module RoRmaily
   class AdHocMailing < Mailing
     validates   :list,          presence: true
 
     # Schedules mailing delivery to all entities in the scope at given `time`.
     #
-    # This always creates new {MailyHerald::Log} objects of type `schedule`.
+    # This always creates new {RoRmaily::Log} objects of type `schedule`.
     #
     # @param time [Time] time of delivery
     def schedule_delivery_to_all time = Time.now
       self.list.context.scope_with_subscription(self.list, :outer).each do |entity|
-        MailyHerald.logger.debug "Adding schedule of #{self} ad-hoc for entity ##{entity.id} #{entity}"
+        RoRmaily.logger.debug "Adding schedule of #{self} ad-hoc for entity ##{entity.id} #{entity}"
         schedule_delivery_to entity, time
       end
     end
 
     # Schedules mailing delivery to `entity` at given `time`.
     #
-    # This always creates new {MailyHerald::Log} object of type `schedule`.
+    # This always creates new {RoRmaily::Log} object of type `schedule`.
     #
     # @param entity [ActiveRecord::Base]
     # @param time [Time] time of delivery
@@ -42,8 +42,8 @@ module MailyHerald
     #
     # Performs actual sending of emails; should be called in background.
     #
-    # Returns array of {MailyHerald::Log} with actual `Mail::Message` objects stored
-    # in {MailyHerald::Log.mail} attributes.
+    # Returns array of {RoRmaily::Log} with actual `Mail::Message` objects stored
+    # in {RoRmaily::Log.mail} attributes.
     def run
       # TODO better scope here to exclude schedules for users outside context scope
       schedules.where("processing_at <= (?)", Time.now).collect do |schedule|
@@ -53,7 +53,7 @@ module MailyHerald
           schedule.mail = mail
           schedule
         else
-          MailyHerald.logger.log_processing(schedule.mailing, {class: schedule.entity_type, id: schedule.entity_id}, prefix: "Removing schedule for non-existing entity") 
+          RoRmaily.logger.log_processing(schedule.mailing, {class: schedule.entity_type, id: schedule.entity_id}, prefix: "Removing schedule for non-existing entity") 
           schedule.destroy
         end
       end

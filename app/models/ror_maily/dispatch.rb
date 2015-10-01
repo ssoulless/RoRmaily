@@ -65,7 +65,7 @@ module RoRmaily
 
     after_save do
       if @start_at_proc
-        MailyHerald.start_at_procs[self.id] = @start_at_proc
+        RoRmaily.start_at_procs[self.id] = @start_at_proc
       end
     end
 
@@ -82,16 +82,16 @@ module RoRmaily
 
     # Returns time as string with Liquid expression or Proc.
     def start_at
-      @start_at_proc || MailyHerald.start_at_procs[self.id] || read_attribute(:start_at)
+      @start_at_proc || RoRmaily.start_at_procs[self.id] || read_attribute(:start_at)
     end
 
     def has_start_at_proc?
-      !!(@start_at_proc || MailyHerald.start_at_procs[self.id])
+      !!(@start_at_proc || RoRmaily.start_at_procs[self.id])
     end
 
     def start_at_changed?
       if has_start_at_proc?
-        @start_at_proc != MailyHerald.start_at_procs[self.id]
+        @start_at_proc != RoRmaily.start_at_procs[self.id]
       else
         super
       end
