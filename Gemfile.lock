@@ -186,11 +186,14 @@ DEPENDENCIES
   guard
   guard-rspec
   jquery-rails
-  ror_maily!
   redcarpet
+  ror_maily!
   rspec-rails
   simplecov
   spring-commands-rspec
   sqlite3
   timecop
   yard
+
+BUNDLED WITH
+   1.10.6
