@@ -1,6 +1,6 @@
 # RoRmaily
 
-RoRmaily is a Ruby on Rails gem that helps you sending and managing your mailings. Think of Maily as a self-hosted Mailchimp alternative you can easily integrate with your site. RoRmaily is great both for email marketing and conducting daily stream of notifications you send to your users.
+RoRmaily is a Ruby on Rails gem that helps you sending and managing your mailings. Think of RoRMaily as a self-hosted Mailchimp alternative you can easily integrate with your site and that uses Amazon SES for send your bulk emails. RoRmaily aims to use the power of Amazon SES and others of the familiy of AWS for emailmarketing, since it is wide powerful and cheap than other alternatives, there are other solutions that use Amazon SES however non of them are open source and charge fees, we want people with basic technical knowledge enjoy their emailmerking for free with this Open Source tool.
 
 With RoRmaily you can send:
 * one-time mailings (i.e. welcome emails, special offers),
@@ -11,7 +11,30 @@ Maily keeps track of user subscriptions and allow them to easily opt out. You ca
 
 Maily seamlessly integrates with your app. It can use your regular Mailers or you can build ad-hoc mailings with [Liquid](http://liquidmarkup.org/) markup templates. 
 
-Core Maily features are accessible for Rails programmers via API. Apart from that, Maily has a nice web UI provided by separate [ror_maily-webui](https://github.com/Sology/ror_maily-webui) gem.
+Core Maily features are accessible for Rails programmers via API. Apart from that, we are planning to create a web UI provided by separate into another gem that we will call **ror_maily-webui**
+
+###Contents
+* [Requirements](https://github.com/ssoulless/RoRmaily#requirements)
+* [Installation](https://github.com/ssoulless/RoRmaily#installation)
+* [Features](https://github.com/ssoulless/RoRmaily#features)
+* [Development state](https://github.com/ssoulless/RoRmaily#development-state)
+* [Updating](https://github.com/ssoulless/RoRmaily#updating)
+* [How it works](https://github.com/ssoulless/RoRmaily#how-it-works)
+* [Usage](https://github.com/ssoulless/RoRmaily#usage)
+  * [Migrations](https://github.com/ssoulless/RoRmaily#migrations)
+  * [Defaults](https://github.com/ssoulless/RoRmaily#defaults-optional)
+  * [Initializer](https://github.com/ssoulless/RoRmaily#initializer)
+  * [Mailers](https://github.com/ssoulless/RoRmaily#mailers)
+  * [Opt-outs](https://github.com/ssoulless/RoRmaily#opt-outs)
+  * [Delivery](https://github.com/ssoulless/RoRmaily#opt-outs)
+  * [Background processing](https://github.com/ssoulless/RoRmaily#background-processing)
+* [Configuring](https://github.com/ssoulless/RoRmaily#configuring)
+* [Deployments](https://github.com/ssoulless/RoRmaily#deployments)
+* [Opt-out URLs](https://github.com/ssoulless/RoRmaily#opt-out-urls)
+* [Redis namespaces](https://github.com/ssoulless/RoRmaily#redis-namespaces)
+* [Contributing](https://github.com/ssoulless/RoRmaily#contributing)
+* [More Information](https://github.com/ssoulless/RoRmaily#more-information)
+* [License](https://github.com/ssoulless/RoRmaily#license)
 
 ## Requirements
 
@@ -30,6 +53,7 @@ or put in your Gemfile
 ## Features
 
 * Designed for Ruby on Rails
+* Designed for work with Amazon SES
 * Self-hosted
 * Seamless and flexible integration
 * Asynchronous processing
@@ -43,9 +67,11 @@ or put in your Gemfile
 
 ## Development state
 
-RoRmaily is relatively young piece of software and can't be considered stable. Although it has been deployed to few production environments for quite some time now, we can't guarantee it will suite your needs too.
+There is not a Stable release of RoRmaily, and its mayor main features are not ready yet, like Amazon SES integration, right now it is using local mailer for send bulk email, we want to achieve in the near future to integrate bulk email delivery using Amazon SES.
 
-If you decide to use it, please tell us what you think about it, post some issues on GitHub etc. We're waiting for your feedback.
+The other key feature for ynchronous processing is the integraiton with Amazon SQS, right now RoRmaily uses a local Redis server along with Sidekiq for background job processing, the goal is to let that work to Amazon Queues (SQS).
+
+Once the main features are ready we want to add some other features that we have not planned in our priorities.
 
 Here are some things we would like to implement in the future:
 
@@ -54,6 +80,9 @@ Here are some things we would like to implement in the future:
 * link tracking,
 * better Web UI,
 * _put your beloved feature here_.
+
+## Updating
+See [release notes](RELEASE_NOTES.md) for information about what has changed and if actions are needed to upgrade, and if you want to know how we are versioning the gem please see [naming conventions](VERSIONING_CONVENTIONS.md)
 
 ## How it works
 
@@ -185,7 +214,7 @@ end
 
 ### Mailers
 
-You don't need to have any Mailer to use RoRmaily. It works perfectly fine with its generic `RoRmaily::Mailer` and mailing templates written in Luquid. 
+You don't need to have any Mailer to use RoRmaily. It works perfectly fine with its generic `RoRmaily::Mailer` and mailing templates written in Liquid. 
 
 But if you still want your fancy Mailer views and features, you need to modify it a bit.
 
@@ -247,7 +276,7 @@ Of course, you can also run the mailing for all users in scope at once:
 RoRmaily.dispatch(:hello).run
 ```
 
-See [API Docs](http://www.rubydoc.info/gems/ror_maily) for more details about delivery methods.
+See [API Docs](http://www.rubydoc.info/github/ssoulless/RoRmaily) for more details about delivery methods.
 
 ### Background processing
 
@@ -344,12 +373,22 @@ Then of course you need to tell Maily about that too:
 :redis_namespace: maily
 ```
 
+## Contributing
+
+Would you like to help in the development of RoRmaily? [Follow these steps](CONTRIBUTING.md).
+
 ## More Information
 
-For bug reports or feature requests see the [issues on Github](https://github.com/Sology/ror_maily/issues).  
+* [API Docs](http://www.rubydoc.info/github/ssoulless/RoRmaily)
+* For bug reports or feature requests see the [issues on Github](https://github.com/ssoulless/RoRmaily/issues).  
 
 ## License
 
 LGPLv3 License. Copyright 2015
 
-Initial development sponsored by University of Quincio (http://uniquindio.edu.co)
+Initial development sponsored by University of Quindio (http://uniquindio.edu.co)
+
+## Credits
+
+* Based and inspired in [MailyHerald](https://github.com/Sology/maily_herald). Seeking to merge RoRmaily features with MailyHerald in a near future.
+* Documentation Structure based on [Sharetribe](https://github.com/sharetribe/sharetribe) Docs templates.
