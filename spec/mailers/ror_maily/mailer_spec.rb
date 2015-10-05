@@ -30,4 +30,16 @@ describe RoRmaily::Mailer do
       expect(RoRmaily::Log.delivered.count).to eq(1)
     end
   end
+
+  context "without defined mailing" do
+    it "should not deliver" do
+      expect do
+        expect(RoRmaily::Log.delivered.count).to eq(0)
+
+        AdHocMailer.missing_mailing_mail(@entity).deliver
+
+        expect(RoRmaily::Log.delivered.count).to eq(0)
+      end.not_to change { ActionMailer::Base.deliveries.count }
+    end
+  end
 end

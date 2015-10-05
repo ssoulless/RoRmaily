@@ -21,6 +21,11 @@ module RoRmaily
     class << self
       #TODO make it instance method so we get access to instance attributes
       def deliver_mail(mail) #:nodoc:
+        unless mail.ror_maily_data
+          RoRmaily.logger.error("Unable to send message. Invalid mailing provided.")
+          return
+        end
+
         mailing = mail.ror_maily_data[:mailing]
         entity = mail.ror_maily_data[:entity]
         schedule = mail.ror_maily_data[:schedule]
@@ -40,11 +45,6 @@ module RoRmaily
           end
         else
           RoRmaily.logger.log_processing(mailing, entity, mail, prefix: "Attempt to deliver email without schedule. No mail was sent", level: :debug)
-
-          #ActiveSupport::Notifications.instrument("deliver.action_mailer") do |payload|
-            #self.set_payload_for_mail(payload, mail)
-            #yield # Let Mail do the delivery actions
-          #end
         end
       end
     end
@@ -53,9 +53,11 @@ module RoRmaily
       return @_message if @_mail_was_called && headers.blank? && !block
 
       # Assign instance variables availabe for template
-      @maily_subscription = @_message.ror_maily_data[:subscription]
-      @maily_entity = @_message.ror_maily_data[:entity]
-      @maily_mailing = @_message.ror_maily_data[:mailing]
+      if @_message.ror_maily_data
+        @maily_subscription = @_message.ror_maily_data[:subscription]
+        @maily_entity = @_message.ror_maily_data[:entity]
+        @maily_mailing = @_message.ror_maily_data[:mailing]
+      end
 
       super
     end
@@ -84,18 +86,22 @@ module RoRmaily
         @ror_maily_entity = args[1]
       end
 
-      @_message.ror_maily_data = {
-        schedule: @ror_maily_schedule,
-        mailing: @ror_maily_mailing,
-        entity: @ror_maily_entity,
-        subscription: @ror_maily_mailing.subscription_for(@ror_maily_entity),
-      }
+      if @ror_maily_mailing
+        @_message.ror_maily_data = {
+          schedule: @ror_maily_schedule,
+          mailing: @ror_maily_mailing,
+          entity: @ror_maily_entity,
+          subscription: @ror_maily_mailing.subscription_for(@ror_maily_entity),
+        }
+      end
 
       lookup_context.skip_default_locale!
       super(args[0], @ror_maily_entity)
 
-      @_message.to = @ror_maily_mailing.destination(@ror_maily_entity) unless @_message.to
-      @_message.from = @ror_maily_mailing.from unless @_message.from
+      if @ror_maily_mailing
+        @_message.to = @ror_maily_mailing.destination(@ror_maily_entity) unless @_message.to
+        @_message.from = @ror_maily_mailing.from unless @_message.from
+      end
 
       @_message
     end
