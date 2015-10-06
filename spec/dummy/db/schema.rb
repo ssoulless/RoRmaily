@@ -13,7 +13,7 @@
 
 ActiveRecord::Schema.define(:version => 20150205120443) do
 
-  create_table "ror_maily_dispatches", :force => true do |t|
+  create_table "maily_herald_dispatches", :force => true do |t|
     t.string   "type",                                          :null => false
     t.integer  "sequence_id"
     t.integer  "list_id",                                       :null => false
@@ -33,15 +33,15 @@ ActiveRecord::Schema.define(:version => 20150205120443) do
     t.datetime "updated_at",                                    :null => false
   end
 
-  add_index "ror_maily_dispatches", ["name"], :name => "index_ror_maily_dispatches_on_name", :unique => true
+  add_index "maily_herald_dispatches", ["name"], :name => "index_maily_herald_dispatches_on_name", :unique => true
 
-  create_table "ror_maily_lists", :force => true do |t|
+  create_table "maily_herald_lists", :force => true do |t|
     t.string "name",         :null => false
     t.string "title"
     t.string "context_name"
   end
 
-  create_table "ror_maily_logs", :force => true do |t|
+  create_table "maily_herald_logs", :force => true do |t|
     t.integer  "entity_id",     :null => false
     t.string   "entity_type",   :null => false
     t.string   "entity_email"
@@ -51,7 +51,7 @@ ActiveRecord::Schema.define(:version => 20150205120443) do
     t.datetime "processing_at"
   end
 
-  create_table "ror_maily_subscriptions", :force => true do |t|
+  create_table "maily_herald_subscriptions", :force => true do |t|
     t.integer  "entity_id",                       :null => false
     t.integer  "list_id",                         :null => false
     t.string   "entity_type",                     :null => false

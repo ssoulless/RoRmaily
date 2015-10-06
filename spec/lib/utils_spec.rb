@@ -1,14 +1,14 @@
 require 'spec_helper'
 
-describe RoRmaily::Utils do
-  describe RoRmaily::Utils::MarkupEvaluator do
+describe MailyHerald::Utils do
+  describe MailyHerald::Utils::MarkupEvaluator do
     before(:each) do
-      @mailing = RoRmaily.one_time_mailing :test_mailing
+      @mailing = MailyHerald.one_time_mailing :test_mailing
       @user = FactoryGirl.create :user
       @list = @mailing.list
       @list.subscribe!(@user)
       @subscription = @mailing.subscription_for(@user)
-      @evaluator = RoRmaily::Utils::MarkupEvaluator.new(@list.context.drop_for(@user, @subscription))
+      @evaluator = MailyHerald::Utils::MarkupEvaluator.new(@list.context.drop_for(@user, @subscription))
     end
 
     describe "conditions" do
@@ -16,7 +16,7 @@ describe RoRmaily::Utils do
         expect(@mailing).to be_valid
         @mailing.conditions = "foo bar"
         #expect {@evaluator.evaluate_conditions(@mailing.conditions)}.to raise_error(Liquid::Error)
-        expect(RoRmaily::Utils::MarkupEvaluator.test_conditions(@mailing.conditions)).to be_falsy
+        expect(MailyHerald::Utils::MarkupEvaluator.test_conditions(@mailing.conditions)).to be_falsy
         expect(@mailing).not_to be_valid
         expect(@mailing.errors).to include(:conditions)
       end
@@ -64,7 +64,7 @@ describe RoRmaily::Utils do
       it "should validate syntax" do
         expect(@mailing).to be_valid
         @mailing.start_at = "- foo bar | ddd"
-        expect(RoRmaily::Utils::MarkupEvaluator.test_start_at(@mailing.start_at)).to be_falsy
+        expect(MailyHerald::Utils::MarkupEvaluator.test_start_at(@mailing.start_at)).to be_falsy
         expect(@mailing).not_to be_valid
         expect(@mailing.errors).to include(:start_at)
       end
@@ -80,7 +80,7 @@ describe RoRmaily::Utils do
       end
 
       it "should evaluate attributes without subscription" do
-        @evaluator = RoRmaily::Utils::MarkupEvaluator.new(@list.context.drop_for(@user, nil))
+        @evaluator = MailyHerald::Utils::MarkupEvaluator.new(@list.context.drop_for(@user, nil))
         expect(@evaluator.evaluate_start_at("user.created_at")).to eq(@user.created_at)
       end
     end
