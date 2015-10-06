@@ -4,4 +4,4 @@ cache: bundler
 services:
   - redis-server
 rvm:
-  - 1.9.3p484
+  - 1.9.3
