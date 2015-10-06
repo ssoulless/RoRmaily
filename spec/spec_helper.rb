@@ -23,6 +23,9 @@ require "database_cleaner"
 require 'sidekiq/testing'
 require 'timecop'
 
+require 'coveralls'
+Coveralls.wear!
+
 ENGINE_RAILS_ROOT=File.join(File.dirname(__FILE__), '../')
 
 

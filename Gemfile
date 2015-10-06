@@ -5,6 +5,8 @@ gemspec
 # jquery-rails is used by the dummy application
 gem "jquery-rails"
 
+gem 'coveralls', require: false
+
 group :debug do
   gem 'debugger'
 end

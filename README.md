@@ -1,6 +1,6 @@
 # RoRmaily
 
-[![Build Status](https://travis-ci.org/ssoulless/RoRmaily.svg?branch=development)](https://travis-ci.org/ssoulless/RoRmaily)
+[![Build Status](https://travis-ci.org/ssoulless/RoRmaily.svg?branch=development)](https://travis-ci.org/ssoulless/RoRmaily) [![Coverage Status](https://coveralls.io/repos/ssoulless/RoRmaily/badge.svg?branch=master&service=github)](https://coveralls.io/github/ssoulless/RoRmaily?branch=master)
 
 RoRmaily is a Ruby on Rails gem that helps you sending and managing your application mailings. Think of Maily as a self-hosted Mailchimp alternative you can easily integrate with your site. RoRmaily is great both for email marketing and conducting daily stream of notifications you send to your users.
 
