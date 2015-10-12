@@ -2,21 +2,41 @@
 
 [![Build Status](https://travis-ci.org/ssoulless/RoRmaily.svg?branch=development)](https://travis-ci.org/ssoulless/RoRmaily) [![Coverage Status](https://coveralls.io/repos/ssoulless/RoRmaily/badge.svg?branch=master&service=github)](https://coveralls.io/github/ssoulless/RoRmaily?branch=master)
 
-RoRmaily is a Ruby on Rails gem that helps you sending and managing your application mailings. Think of Maily as a self-hosted Mailchimp alternative you can easily integrate with your site. RoRmaily is great both for email marketing and conducting daily stream of notifications you send to your users.
+RoRmaily is a Ruby on Rails gem that helps you sending and managing your mailings. Think of RoRMaily as a self-hosted Mailchimp alternative you can easily integrate with your site and that uses Amazon SES for send your bulk emails. RoRmaily aims to use the power of Amazon SES and others of the familiy of AWS for emailmarketing, since it is wide powerful and cheap than other alternatives, there are other solutions that use Amazon SES however non of them are open source and charge fees, we want people with basic technical knowledge enjoy their emailmerking for free with this Open Source tool.
 
 With RoRmaily you can send:
-* ad-hoc mailings - arbitrary emails sent to one or more users at given point in time (i.e. special offers, announcements),
-* one-time mailings (i.e. account activation or welcome emails),
-* ad-hoc mailings - arbitrary emails sent to one or more users at given point in time (i.e. password reset instructions, special offers, announcements),
-* one-time mailings (i.e. account activation, welcome emails),
+* one-time mailings (i.e. welcome emails, special offers),
 * periodical mailings (i.e. weekly notifications, reminders),
-* mailing sequences - multiple ordered emails delivered with certain delays since specific point in time (i.e. onboarding emails, site feature overview, reminders).
+* mailing sequences - multiple ordered emails delivered with certain delays since specific point in time (i.e. onboarding emails, site feature overview).
 
-Maily keeps track of user subscriptions and allows them to easily opt out. You can define who receives which emails and specify conditions that control delivery. All mailing deliveries are scheduled individually for each recipient, tracked and logged.
+Maily keeps track of user subscriptions and allow them to easily opt out. You can define who receives which emails and specify conditions that control delivery. All deliveries are tracked and logged. Periodical and Sequence mailing deliveries are scheduled individually for each recipient.
 
-Maily seamlessly integrates with your app. It can use your regular Action Mailers or you can build email contents with [Liquid](http://liquidmarkup.org/) markup templates.
+Maily seamlessly integrates with your app. It can use your regular Mailers or you can build ad-hoc mailings with [Liquid](http://liquidmarkup.org/) markup templates. 
 
-Core Maily features are accessible for Rails programmers via API. Apart from that, Maily has a nice web UI provided by separate [ror_maily-webui](https://github.com/railskarate/ror_maily-webui) gem.
+Core Maily features are accessible for Rails programmers via API. Apart from that, we are planning to create a web UI provided by separate into another gem that we will call **ror_maily-webui**
+
+###Contents
+* [Requirements](https://github.com/ssoulless/RoRmaily#requirements)
+* [Installation](https://github.com/ssoulless/RoRmaily#installation)
+* [Features](https://github.com/ssoulless/RoRmaily#features)
+* [Development state](https://github.com/ssoulless/RoRmaily#development-state)
+* [Updating](https://github.com/ssoulless/RoRmaily#updating)
+* [How it works](https://github.com/ssoulless/RoRmaily#how-it-works)
+* [Usage](https://github.com/ssoulless/RoRmaily#usage)
+  * [Migrations](https://github.com/ssoulless/RoRmaily#migrations)
+  * [Defaults](https://github.com/ssoulless/RoRmaily#defaults-optional)
+  * [Initializer](https://github.com/ssoulless/RoRmaily#initializer)
+  * [Mailers](https://github.com/ssoulless/RoRmaily#mailers)
+  * [Opt-outs](https://github.com/ssoulless/RoRmaily#opt-outs)
+  * [Delivery](https://github.com/ssoulless/RoRmaily#opt-outs)
+  * [Background processing](https://github.com/ssoulless/RoRmaily#background-processing)
+* [Configuring](https://github.com/ssoulless/RoRmaily#configuring)
+* [Deployments](https://github.com/ssoulless/RoRmaily#deployments)
+* [Opt-out URLs](https://github.com/ssoulless/RoRmaily#opt-out-urls)
+* [Redis namespaces](https://github.com/ssoulless/RoRmaily#redis-namespaces)
+* [Contributing](https://github.com/ssoulless/RoRmaily#contributing)
+* [More Information](https://github.com/ssoulless/RoRmaily#more-information)
+* [License](https://github.com/ssoulless/RoRmaily#license)
 
 ## Requirements
 
@@ -35,30 +55,36 @@ or put in your Gemfile
 ## Features
 
 * Designed for Ruby on Rails
+* Designed for work with Amazon SES
 * Self-hosted
 * Seamless and flexible integration
-* Asynchronous email processing
-* Per-recipient delivery scheduling
+* Asynchronous processing
+* Individual delivery scheduling 
 * Great both for developers (API) and end-users (Web UI) 
-* On-the-fly email templating using [Liquid](http://liquidmarkup.org/) syntax
-* Four different mailing types
+* Ad-hoc email templating using [Liquid](http://liquidmarkup.org/) syntax
+* Three different mailing types
 * User-friendly subscription management i.e. via automatic & personal opt-out links
 * Correspondence logging
-* Delivery conditions
+* Mailing conditions
 
 ## Development state
 
-RoRmaily is relatively young piece of software and  it has been deployed only to few production environments.
+There is not a Stable release of RoRmaily, and its mayor main features are not ready yet, like Amazon SES integration, right now it is using local mailer for send bulk email, we want to achieve in the near future to integrate bulk email delivery using Amazon SES.
 
-If you decide to use it, please tell us what you think about it, post some issues on GitHub etc. We're waiting for your feedback.
+The other key feature for ynchronous processing is the integraiton with Amazon SQS, right now RoRmaily uses a local Redis server along with Sidekiq for background job processing, the goal is to let that work to Amazon Queues (SQS).
+
+Once the main features are ready we want to add some other features that we have not planned in our priorities.
 
 Here are some things we would like to implement in the future:
 
+* better mailing scheduling,
 * message analytics,
 * link tracking,
-* fetching bounces from email service (Amazon SMS, Mandrill, Sendgrid etc.),
-* better templating,
+* better Web UI,
 * _put your beloved feature here_.
+
+## Updating
+See [release notes](RELEASE_NOTES.md) for information about what has changed and if actions are needed to upgrade, and if you want to know how we are versioning the gem please see [naming conventions](VERSIONING_CONVENTIONS.md)
 
 ## How it works
 
@@ -70,7 +96,7 @@ Entities are basically your mailing recipients. They will be probably represente
 
 **Mailings**
 
-You usually send single emails to your users - one at a time. Mailing is a bunch of emails sent out to many users. RoRmaily allows you to send four types of Mailings: ad-hoc, one-times, periodicals and sequences.
+You usually send single emails to your users - one at a time. Mailing is a bunch of emails sent out to many users. RoRmaily allows you to send three types of Mailings: one-times, periodicals and sequences.
 
 **Contexts**
 
@@ -78,15 +104,15 @@ Maily Contexts are abstraction layer for accessing collections of entities and t
 
 There are three main things that Contexts do:
 
-* They define sets of entities via standard Rails scopes (i.e. `User.activated` meaning all application users that activated their accounts).
+* They define sets of entities via Rails scopes (i.e. `User.activated` meaning all application users that activated their accounts). 
 * They specify destination email addresses for entities (i.e. you can define that `User#email` method returns email address or specify a custom proc that does that).
 * They specify additional entity attributes that can be used inside Mailing templates, conditions etc. (basically - attributes accessible via Liquid).
 
 **Lists and Subscriptions**
 
-Lists are sets of entities that receive certain mailings. Entities are added to Lists by creating Subscriptions. It is entirely up to you how you manage subscriptions in application. Typically, you would put some checkbox in user's profile page which subscribes and unsubscribes them from mailing lists.
+Lists are sets of entities that receive certain mailings. Entities are added to Lists by creating Subscriptions. It is entirely up to you how you manage subscriptions in application. Typically, you put some checkbox in user's profile page that subscribes and unsubscribes them from mailing lists.
 
-Each Subscription has it's unique token allowing users to be provided with one-click opt-out link.
+Each Subscription has it's unique token allowing users to be provided with one click opt-out link.
 
 **Mailers**
 
@@ -96,9 +122,9 @@ There's also a possibility to send Mailings without using any of your custom Mai
 
 **Delivery**
 
-RoRmaily uses great gem [Sidekiq](http://sidekiq.org/) to process deliveries in the background. This applies to all kinds of Mailings - their delivieries are scheduled individually for each entity on the subscription list.
+RoRmaily uses great gem [Sidekiq](http://sidekiq.org/) to process deliveries in the background. This applies to Periodical and Sequence Mailings - their delivieries are scheduled individually for each entity on the subscription list. 
 
-Maily needs to check periodically for scheduled mailings and if their time come - queue them for delivery. This is job for RoRmaily Paperboy - tiny daemon that runs in the background and check the schedules. It is essential to make your mailings work.
+Maily needs to check periodically for scheduled mailings and if their time come - queue them for delivery. This is job for RoRmaily Paperboy - tiny daemon that runs in the background and check the schedules. It is essential to make you periodical and sequence mailings work.
 
 ## Usage
 
@@ -115,17 +141,17 @@ rake db:migrate
 
 ### Defaults (optional)
 
-In some cases, you need to specify default `from` and `host` mailer options in your application in order to ensure proper email rendering:
+In some cases, you need to specify default `from` and `host` mailer options in order to ensure proper email rendering:
 
 ```ruby
-# config/application.rb
 config.action_mailer.default_options = { from: "hello@RoRmaily.org" }
 config.action_mailer.default_url_options = { host: "RoRmaily.org" }
+
 ```
 
 ### Initializer
 
-Generate an initializer:
+Generate and setup an initializer.
 
 ```ruby
 rails g ror_maily:install
@@ -161,12 +187,15 @@ end
 Following means that all users in `:active_users` context scope can be subscribed to `:newsletters` list.
 
 ```ruby
+config.list :notifications do |list|
+  list.context_name = :active_users
+end
+
 config.list :newsletters do |list|
   list.context_name = :active_users
 end
 ```
 
-RoRmaily lists are opt-in lists. They are empty by default so make sure to add entities to them i.e. by using `RoRmaily.subscribe` method.
 **Set up your mailings**
 
 ```ruby
@@ -174,7 +203,6 @@ config.one_time_mailing :hello do |mailing|
   mailing.title = "Hello mailing"
   mailing.list = :notifications
   mailing.mailer_name = "UserMailer"
-  mailing.start_at = Proc.new{|user| user.created_at + 1.hour}
   mailing.enable # mailings are disabled by default
 end
 
@@ -182,87 +210,15 @@ config.periodical_mailing :weekly_newsletter do |mailing|
   mailing.title = "Weekly newsletter"
   mailing.list = :newsletters
   mailing.mailer_name = "UserMailer"
-  mailing.start_at = Proc.new{|user| user.created_at + 1.week}
-  mailing.period = 1.week
-  mailing.enable
-end
-```
-
-**Configuration locking**
-
-By default, all contexts, lists and mailings initialized inside `RoRmaily.setup` block are locked and can't be edited at runtime. This constraint is enforced to maintain the nature of RoR application initializer files. Things set up in the initializer should be always read-only because initializer is executed every time the application spawns.
-
-If you need to set up mailings programatically and make them unlocked, simply just don't use `RoRmaily.setup`. Instead, use methods from `RoRmaily` class directly. You can put your code for example in DB seed file or some rake task.
-
-You would typically put your `RoRmaily.setup` block in the Maily initializer file. Keep in mind, that this file is evaluated every time Rails boots up so changes made there (i.e. new mailings added) will be reflected at next application launch.
-
-### Different mailing types
-
-**AdHocMailing** is the most similar to regular Ruby on Rails emails sent using ActionMailer. The only difference is that their delivery is handled by Maily and thus backgrounded and logged. 
-
-**OneTimeMailing** deliveres are performed only once to single recpient at scheduled delivery time. Is fully automatic and its delivery can't be manually triggered. OneTimeMailing schedules are created basing on `start_at` attribute individually for each recipient.
-
-**PeriodicalMailing** handles multiple, periodical email deliveries to single recipient. It is also automatic and apart `start_at` attribute uses also a `period` which defines time distance between consecutive deliveries.
-
-**Sequence** allows yout to send multiple different mailings to given entity with various time delays. It is achieved by defining SequenceMailings associated to Sequence with delivery delays stored in their `absolute_delay` attributes. Mailing delivery delay is calculated from a point in time defined in Sequence's `start_at` attribute (similarly to PeriodicalMailing).
-
-### Procs and Liquid syntax
-
-Mailing attributes like `start_at` and `conditions` can be defined programatically as procs or as a string using Liquid syntax. Here's the example of those two cases:
-
-```ruby
-# Using Proc:
-mailing.start_at = Proc.new{|user| user.created_at + 5.minutes}
-
-# Using Liquid:
-mailing.start_at = "user.created_at | plus: 5, 'minutes'"
-```
-
-Liquid syntax is obviously more convenient for non-programmers (and can be safely used i.e. in WebUI) but requires some additional setup inside Maily Context. Context attributes available within Liquid templates have to be defined:
-
-```ruby
-config.context :all_users do |context|
-  context.scope {User.all}
-  context.destination = :email
-  context.attributes do |user| 
-    attribute_group(:user) do
-      attribute(:name) {user.name}
-      attribute(:email) {user.email}
-      attribute(:created_at) {user.created_at}
-    end
-  end
-end
-```
-
-Maily provides some Liquid filters that are particularily useful for time manipulation:
-
-* `plus: <number>, '<period>'`
-* `minus: <number>, '<period>'`
-
-They can be used for incrementing and decrementing time value. `<number>` is simply some integer; `<period>` is one of 'minutes', 'hours', 'days' etc.
-
-Mailing body can be also defined programatically using custom Mailer. The other way is to not define explicit Mailer but rather set subject and template as Liquid templates.
-
-```ruby
-# Using custom ActionMailer:
-config.ad_hoc_mailing :hello do |mailing|
-  mailing.list = :all_users
-  mailing.mailer_name = "UserMailer" # In this case, you should have a mailer called 'UserMailer' that defines method 'hello'.
-  mailing.enable
-end
-
-# Using Liquid templates:
-config.ad_hoc_mailing :hello do |mailing|
-  mailing.list = :all_users
-  mailing.subject = "Hello {{user.name}}!"
-  mailing.template = "What's up?"
   mailing.enable
 end
 ```
 
 ### Mailers
 
-If you want to use your custom ActionMailers with Maily, you need to modify them a bit.
+You don't need to have any Mailer to use RoRmaily. It works perfectly fine with its generic `RoRmaily::Mailer` and mailing templates written in Liquid. 
+
+But if you still want your fancy Mailer views and features, you need to modify it a bit.
 
 First, each Mailer you want to use with RoRmaily needs to extend `RoRmaily::Mailer` class. 
 Then each Mailer method must be named after mailing identification name and accept only one parameter which is your entity (i.e. `User` class object).
@@ -298,48 +254,43 @@ mount RoRmaily::Engine => "/unsubscribe", :as => "ror_maily_engine"
 Maily provides you with URL helper that generates opt-out URLs (i.e. in your ActionMailer views):
 
 ```ruby
-ror_maily_engine.unsubscribe_url(@maily_subscription)
+ror_maily_engine.maily_unsubscribe_url(@maily_subscription)
 ```
 
-When you use Liquid for email templating, your context will always include special attribute @subscription@ that allows you to easily output unique opt-out url. Use the following syntax:
-
+When you use Liquid for email templating, you should use following syntax:
 ```
 {{subscription.token_url}}
 ```
 
 Visiting opt-out url disables subscription and by default redirects to "/".
 
-### Delivery and background processing
+### Delivery
 
-RoRmaily mailings are always sent in background. They won't block you application thread - that's guaranteed.
-
-In order to make your deliveries work, you need to run RoRmaily Paperboy which will take care of it:
-
-```
-$ bundle exec ror_maily paperboy --start
-```
-
-Paperboy will monitor your mailing schedules and queue their delivery. The actual sending of emails is handled in background as Sidekiq job, so make sure you run Sidekiq along with Paperboy.
-
-You can't manually trigger delivery of one time, periodical and sequence mailings. Their schedules and deliveries are maintained automatically.
-
-Ad-hoc mailing on the other hand can (and should!) be manually scheduled for delivery:
+From now on, Maily will handle and track your regular mail deliveries:
 
 ```ruby
-UserMailer.password_reset(User.first).deliver
+UserMailer.hello(User.first).deliver
 ```
 
-This code uses standard Action Mailer syntax but instead of sending the email directly, it basically queues background delivery of ad-hoc mailing named `password_reset` to given user. Alternative Maily syntax is:
+Of course, you can also run the mailing for all users in scope at once:
 
 ```ruby
-RoRmaily.ad_hoc_mailing(:password_reset).schedule_delivery_to User.first, Time.now
+RoRmaily.dispatch(:hello).run
 ```
 
-### That's it!
+See [API Docs](http://www.rubydoc.info/github/ssoulless/RoRmaily) for more details about delivery methods.
+
+### Background processing
+
+Start RoRmaily Paperboy which will take care of your other periodical and sequence deliveries:
+
+```
+$ ror_maily paperboy --start
+```
+
+**That's it!**
 
 Your Maily setup is now complete.
-
-See [API Docs](http://www.rubydoc.info/gems/ror_maily) for more details about usage and configuration.
 
 ## Configuring
 
@@ -354,17 +305,9 @@ You can configure your Maily using config file `config/ror_maily.yml`. Supported
 
 ## Other stuff
 
-### Periodical mailing scheduling
-
-Periodical mailing is kind of special one and has two modes of scheduling: general and individual. If you specify @start_at@ as an absolute time, i.e. @"2111-01-01 11:11"@, it goes into general scheduling mode and consecutive mailings will be delivered to all subscribed entities at the same time at every period. This way you can send i.e. weekly newsletters every Monday to all subscribers.
-
-When you specify @start_at@ as a individual time, i.e. @"user.start_at"@ - individual scheduling mode will be enabled. In this case, delivery periods will count individually for each user and deliveires will be made accordingly.
-
-Individual scheduling mode is the only mode available for all other mailing types.
-
 ### Deployments
 
-Maily has built-in simple support for Capistrano. It supports both v2 and v3 and automates the task of starting, stopping and restarting Paperboy daemon during deployments.
+Maily has some simple support for Capistrano built-in. It supports both v2 and v3 and automates the task of starting, stopping and restarting Paperboy daemon during deployments.
 
 To enable, just put following line into your `Capfile`:
 
@@ -374,7 +317,7 @@ require 'ror_maily/capistrano'
 
 ### Opt-out URLs
 
-By default, visiting opt-out URL silently disables subscription and redirects to "/". You can easily customize the redirect path by specifying `token_redirect` proc:
+By default, visiting opt-out URL disables subscription and redirects to "/". You can easily customize the redirect path by specifying `token_redirect` proc:
 
 ```ruby
 # Evaluated within config:
@@ -409,6 +352,10 @@ module RoRmaily
   end
 end
 ```
+### Periodical mailing scheduling
+Periodical mailing is kind of special one and has two modes of scheduling: general and individual. If you specify `start_at` as an absolute time, i.e. `"2111-01-01 11:11"`, it goes into general scheduling mode and consecutive mailings will be delivered to all subscribed entities at the same time at every period. This way you can send i.e. weekly newsletters every Monday to all subscribers.
+
+When you specify `start_at` as a individual time, i.e. `"user.start_at"` - individual scheduling mode will be enabled. In this case, delivery periods will count individually for each user and deliveires will be made accordingly.
 
 ### Redis namespaces
 
@@ -432,12 +379,22 @@ Then of course you need to tell Maily about that too:
 :redis_namespace: maily
 ```
 
+## Contributing
+
+Would you like to help in the development of RoRmaily? [Follow these steps](CONTRIBUTING.md).
+
 ## More Information
 
-For bug reports or feature requests see the [issues on Github](https://github.com/railskarate/ror_maily/issues).  
+* [API Docs](http://www.rubydoc.info/github/ssoulless/RoRmaily)
+* For bug reports or feature requests see the [issues on Github](https://github.com/ssoulless/RoRmaily/issues).  
 
 ## License
 
 LGPLv3 License. Copyright 2015
 
 Initial development sponsored by University of Quindio (http://uniquindio.edu.co)
+
+## Credits
+
+* Based and inspired in [MailyHerald](https://github.com/Sology/maily_herald). Seeking to merge RoRmaily features with MailyHerald in a near future.
+* Documentation Structure based on [Sharetribe](https://github.com/sharetribe/sharetribe) Docs templates.
