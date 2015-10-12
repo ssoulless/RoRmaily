@@ -4,7 +4,12 @@
 
 Before you run the tests for the first time you need to load the test database with the empty structure:
 
-`rake test:prepare`
+```
+RAILS_ENV=test rake db:setup
+rspec
+guard # execute specs interactively
+
+```
 
 This is useful command also in reseting the test DB to empty and clean state.
 
@@ -13,14 +18,6 @@ This is useful command also in reseting the test DB to empty and clean state.
 Run all the tests suites:
 
 * run `rspec spec`
-* run `cucumber features`
-* Start Rails server and open `http://localhost:3000/test/`
-
-## Integration testing (Cucumber)
-
-In addition to running all the spec tests with cucumber You can limit or select the tests with tags, for example exclude the tests that are marked as pending `cucumber --tags ~@pending` Or you can run single file of tests or even use a line number to select only a single test.
-
-Cucumber tests use Cabybara and Selenium to test the actions in actual browser window (Firefox by default).
 
 ## Rails unit testing (RSpec)
 
