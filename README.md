@@ -1,6 +1,6 @@
 # RoRmaily
 
-[![Build Status](https://travis-ci.org/ssoulless/RoRmaily.svg?branch=development)](https://travis-ci.org/ssoulless/RoRmaily) [![Coverage Status](https://coveralls.io/repos/ssoulless/RoRmaily/badge.svg?branch=master&service=github)](https://coveralls.io/github/ssoulless/RoRmaily?branch=master)
+[![Build Status](https://travis-ci.org/ssoulless/RoRmaily.svg?branch=development)](https://travis-ci.org/ssoulless/RoRmaily) [![Coverage Status](https://coveralls.io/repos/ssoulless/RoRmaily/badge.svg?branch=development&service=github)](https://coveralls.io/github/ssoulless/RoRmaily?branch=development)
 
 RoRmaily is a Ruby on Rails gem that helps you sending and managing your mailings. Think of RoRMaily as a self-hosted Mailchimp alternative you can easily integrate with your site and that uses Amazon SES for send your bulk emails. RoRmaily aims to use the power of Amazon SES and others of the familiy of AWS for emailmarketing, since it is wide powerful and cheap than other alternatives, there are other solutions that use Amazon SES however non of them are open source and charge fees, we want people with basic technical knowledge enjoy their emailmerking for free with this Open Source tool.
 
