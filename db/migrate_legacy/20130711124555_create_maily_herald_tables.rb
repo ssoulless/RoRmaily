@@ -1,6 +1,6 @@
-class CreateRoRmailyTables < ActiveRecord::Migration
+class CreateMailyHeraldTables < ActiveRecord::Migration
   def change
-    create_table :ror_maily_dispatches do |t|
+    create_table :maily_herald_dispatches do |t|
       t.string            :type,                                        null: false
       t.integer           :sequence_id
       t.string            :context_name
@@ -24,11 +24,11 @@ class CreateRoRmailyTables < ActiveRecord::Migration
 
       t.timestamps
     end
-		add_index :ror_maily_dispatches, :name, unique: true
-    add_index :ror_maily_dispatches, :context_name
-    add_index :ror_maily_dispatches, :trigger
+		add_index :maily_herald_dispatches, :name, unique: true
+    add_index :maily_herald_dispatches, :context_name
+    add_index :maily_herald_dispatches, :trigger
 
-    create_table :ror_maily_subscriptions do |t|
+    create_table :maily_herald_subscriptions do |t|
       t.string            :type,                                        null: false
       t.integer           :entity_id,                                   null: false
       t.string            :entity_type,                                 null: false
@@ -41,9 +41,9 @@ class CreateRoRmailyTables < ActiveRecord::Migration
 
       t.timestamps
     end
-		#add_index :ror_maily_subscriptions, [:type, :entity_id, :entity_type, :dispatch_id], unique: true, name: "index_maliy_herald_subscriptions_unique"
+		#add_index :maily_herald_subscriptions, [:type, :entity_id, :entity_type, :dispatch_id], unique: true, name: "index_maliy_herald_subscriptions_unique"
 
-    create_table :ror_maily_logs do |t|
+    create_table :maily_herald_logs do |t|
       t.integer           :entity_id,                                   null: false
       t.string            :entity_type,                                 null: false
       t.integer           :mailing_id
@@ -52,12 +52,12 @@ class CreateRoRmailyTables < ActiveRecord::Migration
       t.datetime          :processed_at
     end
 
-    create_table :ror_maily_subscription_groups do |t|
+    create_table :maily_herald_subscription_groups do |t|
       t.string            :name,                                        null: false
       t.string            :title,                                       null: false
     end
 
-    create_table :ror_maily_aggregated_subscriptions do |t|
+    create_table :maily_herald_aggregated_subscriptions do |t|
       t.integer           :entity_id,                                   null: false
       t.string            :entity_type,                                 null: false
       t.integer           :group_id,                                    null: false

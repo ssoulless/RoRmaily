@@ -1,14 +1,14 @@
-require 'ror_maily/version'
+require 'maily_herald/version'
 
 require 'liquid'
 require 'sidekiq'
 require 'redis'
 
 if defined?(::Rails::Engine)
-  require "ror_maily/engine"
+  require "maily_herald/engine"
 end
 
-module RoRmaily
+module MailyHerald
   class Async
     include Sidekiq::Worker
 
@@ -16,17 +16,15 @@ module RoRmaily
       if args["logger"]
         logger_opts = {level: args["logger"]["level"], progname: "bkg"}
         logger_opts[:target] = args["logger"]["target"]
-        RoRmaily::Logging.initialize(logger_opts)
+        MailyHerald::Logging.initialize(logger_opts)
       end
 
-      if args["mailing"] && args["entity"]
-        RoRmaily::Manager.deliver args["mailing"], args["entity"]
-      elsif args["mailing"]
-        RoRmaily::Manager.run_mailing args["mailing"]
+      if args["mailing"]
+        MailyHerald::Manager.run_mailing args["mailing"]
       elsif args["sequence"]
-        RoRmaily::Manager.run_sequence args["sequence"]
+        MailyHerald::Manager.run_sequence args["sequence"]
       else
-        RoRmaily::Manager.run_all
+        MailyHerald::Manager.run_all
       end
     end
   end
@@ -35,18 +33,33 @@ module RoRmaily
     include Sidekiq::Worker
 
     def perform id
-      dispatch = RoRmaily::Dispatch.find(id)
-      dispatch.update_schedules if dispatch.respond_to?(:update_schedules)
+      dispatch = MailyHerald::Dispatch.find(id)
+      dispatch.set_schedules if dispatch.respond_to?(:set_schedules)
     end
   end
 
-  autoload :Utils,              'ror_maily/utils'
-  autoload :TemplateRenderer,   'ror_maily/template_renderer'
-  autoload :ModelExtensions,    'ror_maily/model_extensions'
-  autoload :Context,            'ror_maily/context'
-  autoload :Manager,            'ror_maily/manager'
-	autoload :Autonaming,					'ror_maily/autonaming'
-	autoload :Logging,					  'ror_maily/logging'
+  class Initializer
+    def initialize klass
+      @klass = klass
+    end
+
+    def method_missing m, *args, &block
+      if %w{list ad_hoc_mailing one_time_mailing periodical_mailing sequence_mailing sequence}.include?(m.to_s)
+        options = args.extract_options!
+        @klass.send m, *args, options.merge(locked: true), &block
+      else
+        @klass.send m, *args, &block
+      end
+    end
+  end
+
+  autoload :Utils,              'maily_herald/utils'
+  autoload :TemplateRenderer,   'maily_herald/template_renderer'
+  autoload :ModelExtensions,    'maily_herald/model_extensions'
+  autoload :Context,            'maily_herald/context'
+  autoload :Manager,            'maily_herald/manager'
+	autoload :Autonaming,					'maily_herald/autonaming'
+	autoload :Logging,					  'maily_herald/logging'
 
   @@token_redirect = nil
 
@@ -101,6 +114,14 @@ module RoRmaily
       self.locked_lists.include?(name.to_s)
     end
 
+    def start_at_procs
+      @@start_at_procs ||= {}
+    end
+
+    def conditions_procs
+      @@conditions_procs ||= {}
+    end
+
     # Obtains Redis connection.
     def redis
       @redis ||= begin
@@ -120,26 +141,29 @@ module RoRmaily
 
     # Gets the Maily logger.
     def logger
-      unless RoRmaily::Logging.initialized?
+      unless MailyHerald::Logging.initialized?
         opts = {
           level: options[:verbose] ? Logger::DEBUG : Logger::INFO,
         }
         opts[:target] = options[:logfile] if options[:logfile]
 
-        RoRmaily::Logging.initialize(opts)
+        MailyHerald::Logging.initialize(opts)
       end
-      RoRmaily::Logging.logger
+      MailyHerald::Logging.logger
     end
 
     # Performs Maily setup.
     #
     # To be used in initializer file.
     def setup
-      @@contexts ||= {}
+      logger.warn("Maily migrations seems to be pending. Skipping setup...") && return unless schema_loaded?
 
-      logger.warn("Maily migrations seems to be pending. Skipping setup...") && return if ([RoRmaily::Dispatch, RoRmaily::List, RoRmaily::Log, RoRmaily::Subscription].collect(&:table_exists?).select{|v| !v}.length > 0)
+      yield Initializer.new(self)
+    end
 
-      yield self
+    # Checks if Maily tables are present
+    def schema_loaded?
+      !([MailyHerald::Dispatch, MailyHerald::List, MailyHerald::Log, MailyHerald::Subscription].collect(&:table_exists?).select{|v| !v}.length > 0)
     end
 
     # Fetches or defines a {Context}.
@@ -152,10 +176,11 @@ module RoRmaily
     # @param name [Symbol] Identifier name of the Context.
     def context name, &block
       name = name.to_s
+      @@contexts ||= {}
 
       if block_given?
         @@contexts ||= {}
-        @@contexts[name] ||= RoRmaily::Context.new(name)
+        @@contexts[name] ||= MailyHerald::Context.new(name)
         yield @@contexts[name]
       else
         @@contexts[name]
@@ -164,11 +189,35 @@ module RoRmaily
 
     # Returns a dispatch with given identifier name.
     #
-    # Dispatch is basically any object extending {RoRmaily::Dispatch}.
+    # Dispatch is basically any object extending {MailyHerald::Dispatch}.
     #
     # @param name [Symbol] Dispatch identifier name.
     def dispatch name
-      RoRmaily::Dispatch.find_by_name(name)
+      MailyHerald::Dispatch.find_by_name(name)
+    end
+
+    # Fetches or defines an {AdHocMailing}.
+    #
+    # If no block provided, {AdHocMailing} with given +name+ is returned.
+    #
+    # If block provided, {AdHocMailing} with given +name+ is created or edited 
+    # and block is evaluated within that mailing.
+    #
+    # @option options [true, false] :locked (false) Determines whether Mailing is locked.
+    # @see Dispatch#locked?
+    def ad_hoc_mailing name, options = {}
+      mailing = MailyHerald::AdHocMailing.where(name: name).first 
+      lock = options.delete(:locked)
+
+      if block_given? && !self.dispatch_locked?(name) && (!mailing || lock)
+        mailing ||= MailyHerald::AdHocMailing.new(name: name)
+        yield(mailing)
+        mailing.save! 
+
+        MailyHerald.lock_dispatch(name) if lock
+      end
+
+      mailing
     end
 
     # Fetches or defines an {OneTimeMailing}.
@@ -181,15 +230,15 @@ module RoRmaily
     # @option options [true, false] :locked (false) Determines whether Mailing is locked.
     # @see Dispatch#locked?
     def one_time_mailing name, options = {}
-      mailing = RoRmaily::OneTimeMailing.where(name: name).first 
+      mailing = MailyHerald::OneTimeMailing.where(name: name).first 
       lock = options.delete(:locked)
 
       if block_given? && !self.dispatch_locked?(name) && (!mailing || lock)
-        mailing ||= RoRmaily::OneTimeMailing.new(name: name)
+        mailing ||= MailyHerald::OneTimeMailing.new(name: name)
         yield(mailing)
         mailing.save! 
 
-        RoRmaily.lock_dispatch(name) if lock
+        MailyHerald.lock_dispatch(name) if lock
       end
 
       mailing
@@ -205,11 +254,11 @@ module RoRmaily
     # @option options [true, false] :locked (false) Determines whether Mailing is locked.
     # @see Dispatch#locked?
     def periodical_mailing name, options = {}
-      mailing = RoRmaily::PeriodicalMailing.where(name: name).first 
+      mailing = MailyHerald::PeriodicalMailing.where(name: name).first 
       lock = options.delete(:locked)
 
       if block_given? && !self.dispatch_locked?(name) && (!mailing || lock)
-        mailing ||= RoRmaily::PeriodicalMailing.new(name: name)
+        mailing ||= MailyHerald::PeriodicalMailing.new(name: name)
         yield(mailing)
         mailing.save!
 
@@ -232,11 +281,11 @@ module RoRmaily
     # @see Dispatch#locked?
     # @see Sequence#mailing
     def sequence name, options = {}
-      sequence = RoRmaily::Sequence.where(name: name).first 
+      sequence = MailyHerald::Sequence.where(name: name).first 
       lock = options.delete(:locked)
 
       if block_given? && !self.dispatch_locked?(name) && (!sequence || lock)
-        sequence ||= RoRmaily::Sequence.new(name: name)
+        sequence ||= MailyHerald::Sequence.new(name: name)
         yield(sequence)
         sequence.save!
 
@@ -256,11 +305,11 @@ module RoRmaily
     # @option options [true, false] :locked (false) Determines whether {List} is locked.
     # @see List#locked?
     def list name, options = {}
-      list = RoRmaily::List.where(name: name).first 
+      list = MailyHerald::List.where(name: name).first 
       lock = options.delete(:locked)
 
       if block_given? && !self.list_locked?(name) && (!list || lock)
-        list ||= RoRmaily::List.new(name: name)
+        list ||= MailyHerald::List.new(name: name)
         yield(list)
         list.save!
 
@@ -275,7 +324,7 @@ module RoRmaily
     # @see List#subscribe!
     def subscribe entity, *list_names
       list_names.each do |ln| 
-        list = RoRmaily.list(ln)
+        list = MailyHerald.list(ln)
         next unless list
 
         list.subscribe! entity
@@ -287,7 +336,7 @@ module RoRmaily
     # @see List#unsubscribe!
     def unsubscribe entity, *list_names
       list_names.each do |ln| 
-        list = RoRmaily.list(ln)
+        list = MailyHerald.list(ln)
         next unless list
 
         list.unsubscribe! entity
@@ -307,37 +356,31 @@ module RoRmaily
       end
     end
 
-    def deliver mailing_name, entity_id
-      mailing_name = mailing_name.name if mailing_name.is_a?(Mailing)
-      entity_id = entity_id.id if !entity_id.is_a?(Fixnum)
-
-      Async.perform_async mailing: mailing_name, entity: entity_id, logger: RoRmaily::Logging.safe_options
-    end
-
     def run_sequence seq_name
       seq_name = seq_name.name if seq_name.is_a?(Sequence)
 
-      Async.perform_async sequence: seq_name, logger: RoRmaily::Logging.safe_options
+      Async.perform_async sequence: seq_name, logger: MailyHerald::Logging.safe_options
     end
 
     def run_mailing mailing_name
       mailing_name = mailing_name.name if mailing_name.is_a?(Mailing)
 
-      Async.perform_async mailing: mailing_name, logger: RoRmaily::Logging.safe_options
+      Async.perform_async mailing: mailing_name, logger: MailyHerald::Logging.safe_options
     end
 
     def run_all
-      Async.perform_async(logger: RoRmaily::Logging.safe_options)
+      Async.perform_async(logger: MailyHerald::Logging.safe_options)
     end
 
     def find_subscription_for mailer_name, mailing_name, entity
-      mailing = RoRmaily::Mailing.where(mailer_name: mailer_name, name: mailing_name).first
+      mailing = MailyHerald::Mailing.where(mailer_name: mailer_name, name: mailing_name).first
       mailing.subscription_for entity
     end
 
     # Read options from config file
-    def read_options cfile = "config/ror_maily.yml"
+    def read_options cfile = "config/maily_herald.yml"
       opts = {}
+      cfile = Pathname.new(cfile).relative? && defined?(Rails) ? Rails.root + cfile : cfile
       if File.exist?(cfile)
         opts = YAML.load(ERB.new(IO.read(cfile)).result)
       end

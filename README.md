@@ -1,5 +1,7 @@
 # RoRmaily
 
+[![Build Status](https://travis-ci.org/ssoulless/RoRmaily.svg?branch=development)](https://travis-ci.org/ssoulless/RoRmaily) [![Coverage Status](https://coveralls.io/repos/ssoulless/RoRmaily/badge.svg?branch=development&service=github)](https://coveralls.io/github/ssoulless/RoRmaily?branch=development)
+
 RoRmaily is a Ruby on Rails gem that helps you sending and managing your mailings. Think of RoRMaily as a self-hosted Mailchimp alternative you can easily integrate with your site and that uses Amazon SES for send your bulk emails. RoRmaily aims to use the power of Amazon SES and others of the familiy of AWS for emailmarketing, since it is wide powerful and cheap than other alternatives, there are other solutions that use Amazon SES however non of them are open source and charge fees, we want people with basic technical knowledge enjoy their emailmerking for free with this Open Source tool.
 
 With RoRmaily you can send:
@@ -68,6 +70,8 @@ or put in your Gemfile
 ## Development state
 
 There is not a Stable release of RoRmaily, and its mayor main features are not ready yet, like Amazon SES integration, right now it is using local mailer for send bulk email, we want to achieve in the near future to integrate bulk email delivery using Amazon SES.
+
+The other key feature for ynchronous processing is the integraiton with Amazon SQS, right now RoRmaily uses a local Redis server along with Sidekiq for background job processing, the goal is to let that work to Amazon Queues (SQS).
 
 The other key feature for ynchronous processing is the integraiton with Amazon SQS, right now RoRmaily uses a local Redis server along with Sidekiq for background job processing, the goal is to let that work to Amazon Queues (SQS).
 
@@ -252,7 +256,7 @@ mount RoRmaily::Engine => "/unsubscribe", :as => "ror_maily_engine"
 Maily provides you with URL helper that generates opt-out URLs (i.e. in your ActionMailer views):
 
 ```ruby
-ror_maily_engine.unsubscribe_url(@maily_subscription)
+ror_maily_engine.maily_unsubscribe_url(@maily_subscription)
 ```
 
 When you use Liquid for email templating, you should use following syntax:
@@ -350,6 +354,10 @@ module RoRmaily
   end
 end
 ```
+### Periodical mailing scheduling
+Periodical mailing is kind of special one and has two modes of scheduling: general and individual. If you specify `start_at` as an absolute time, i.e. `"2111-01-01 11:11"`, it goes into general scheduling mode and consecutive mailings will be delivered to all subscribed entities at the same time at every period. This way you can send i.e. weekly newsletters every Monday to all subscribers.
+
+When you specify `start_at` as a individual time, i.e. `"user.start_at"` - individual scheduling mode will be enabled. In this case, delivery periods will count individually for each user and deliveires will be made accordingly.
 
 ### Redis namespaces
 

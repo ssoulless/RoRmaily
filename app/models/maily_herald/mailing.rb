@@ -1,22 +1,25 @@
-module RoRmaily
+module MailyHerald
   class Mailing < Dispatch
-    include RoRmaily::TemplateRenderer
-    include RoRmaily::Autonaming
+    include MailyHerald::TemplateRenderer
+    include MailyHerald::Autonaming
 
     if Rails::VERSION::MAJOR == 3
       attr_accessible :name, :title, :subject, :context_name, :override_subscription,
                       :sequence, :conditions, :mailer_name, :title, :from, :relative_delay, :template, :start_at, :period
     end
 
-    has_many    :logs,          class_name: "RoRmaily::Log"
+    has_many    :logs,          class_name: "MailyHerald::Log"
     
     validates   :subject,       presence: true, if: :generic_mailer?
     validates   :template,      presence: true, if: :generic_mailer?
+    validate    :mailer_validity
     validate    :template_syntax
     validate    :validate_conditions
 
     before_validation do
       write_attribute(:name, self.title.downcase.gsub(/\W/, "_")) if self.title && (!self.name || self.name.empty?)
+      write_attribute(:conditions, nil) if !self.has_conditions_proc? && self.conditions.try(:empty?)
+      write_attribute(:from, nil) if self.from.try(:empty?)
     end
 
     after_initialize do
@@ -24,6 +27,58 @@ module RoRmaily
         self.override_subscription = false
         self.mailer_name = :generic
       end
+
+      if @conditions_proc
+        self.conditions = "proc"
+      end
+    end
+
+    after_save do
+      if @conditions_proc
+        MailyHerald.conditions_procs[self.id] = @conditions_proc
+      end
+    end
+
+    # Sets mailing conditions.
+    #
+    # @param v String with Liquid expression or `Proc` that evaluates to `true` or `false`.
+    def conditions= v
+      if v.respond_to? :call
+        @conditions_proc = v
+      else
+        write_attribute(:conditions, v)
+      end
+    end
+
+    # Returns time as string with Liquid expression or Proc.
+    def conditions
+      @conditions_proc || MailyHerald.conditions_procs[self.id] || read_attribute(:conditions)
+    end
+
+    def has_conditions_proc?
+      @conditions_proc || MailyHerald.conditions_procs[self.id]
+    end
+
+    def conditions_changed?
+      if has_conditions_proc?
+        @conditions_proc != MailyHerald.conditions_procs[self.id]
+      else
+        super
+      end
+    end
+
+    def general_scheduling?
+      self.start_at.is_a?(String) && Time.parse(self.start_at).is_a?(Time)
+    rescue
+      false
+    end
+
+    def individual_scheduling?
+      !general_scheduling?
+    end
+
+    def ad_hoc?
+      self.class == AdHocMailing
     end
 
     def periodical?
@@ -45,15 +100,10 @@ module RoRmaily
     # Returns {Mailer} class used by this Mailing.
     def mailer
       if generic_mailer?
-        RoRmaily::Mailer
+        MailyHerald::Mailer
       else
         self.mailer_name.to_s.constantize
       end
-    end
-
-    # Checks whether Mailig has conditions defined.
-    def has_conditions?
-      self.conditions && !self.conditions.empty?
     end
 
     # Checks whether Mailing uses generic mailer.
@@ -61,16 +111,35 @@ module RoRmaily
       self.mailer_name == :generic
     end
 
-    # Checks whether entity meets conditions of this Mailing.
-    def conditions_met? entity
-      subscription = self.list.subscription_for(entity)
+    # Checks whether Mailig has conditions defined.
+    def has_conditions?
+      self.conditions && (has_conditions_proc? || !self.conditions.empty?)
+    end
 
-      if self.list.context.attributes
-        evaluator = Utils::MarkupEvaluator.new(self.list.context.drop_for(entity, subscription))
-        evaluator.evaluate_conditions(self.conditions)
+    # Checks whether entity meets conditions of this Mailing.
+    #
+    # @raise [ArgumentError] if the conditions do not evaluate to boolean.
+    def conditions_met? entity
+      subscription = Subscription.get_from(entity) || self.list.subscription_for(entity)
+
+      if has_conditions_proc?
+        !!conditions.call(entity, subscription)
       else
-        true
+        if self.list.context.attributes
+          evaluator = Utils::MarkupEvaluator.new(self.list.context.drop_for(entity, subscription))
+          evaluator.evaluate_conditions(self.conditions)
+        else
+          true
+        end
       end
+    end
+
+    # Checks whether conditions evaluate properly for given entity.
+    def test_conditions entity
+      conditions_met?(entity)
+      true
+    rescue StandardError => e
+      false
     end
 
     # Returns destination email address for given entity.
@@ -106,43 +175,59 @@ module RoRmaily
     #
     # Depending on {#mailer_name} value it uses either generic mailer (from {Mailer} class)
     # or custom mailer.
-    def build_mail entity
+    def build_mail schedule
       if generic_mailer?
-        Mailer.generic(entity, self)
+        Mailer.generic(schedule, self)
       else
-        self.mailer.send(self.name, entity)
+        self.mailer.send(self.name, schedule)
       end
-    end
-
-    # Sends mailing to given entity.
-    #
-    # Returns `Mail::Message`.
-    def deliver_to entity
-      build_mail(entity).deliver
     end
 
     protected
 
+    # Sends mailing to given entity.
+    #
+    # Performs actual sending of emails; should be called in background.
+    #
+    # Returns `Mail::Message`.
+    def deliver schedule
+      build_mail(schedule).deliver
+    rescue StandardError => e
+      MailyHerald.logger.log_processing(self, schedule.entity, prefix: "Error", level: :error) 
+      schedule.update_attributes(status: :error, data: {msg: "#{e.to_s}\n\n#{e.backtrace.join("\n")}"})
+      return nil
+    end
+
     # Called from Mailer, block required
-    def deliver_with_mailer_to entity
+    def deliver_with_mailer schedule
+      entity = schedule.entity
+
       unless processable?(entity)
-        RoRmaily.logger.log_processing(self, entity, prefix: "Not processable", level: :debug) 
-        return 
+        # Most likely the entity went out of the context scope.
+        # Let's leave the log for now just in case it comes back into the scope.
+        MailyHerald.logger.log_processing(self, entity, prefix: "Not processable. Delaying schedule by one day", level: :debug) 
+        skip_reason = in_scope?(entity) ? :not_processable : :not_in_scope
+        schedule.skip(skip_reason) unless schedule.postpone_delivery
+        return schedule
       end
 
       unless conditions_met?(entity)
-        RoRmaily.logger.log_processing(self, entity, prefix: "Conditions not met", level: :debug) 
-        return {status: :skipped}
+        MailyHerald.logger.log_processing(self, entity, prefix: "Conditions not met", level: :debug) 
+        schedule.skip(:conditions_unmet)
+        return schedule
       end
 
       mail = yield # Let mailer do his job
 
-      RoRmaily.logger.log_processing(self, entity, mail, prefix: "Processed") 
+      MailyHerald.logger.log_processing(self, entity, mail, prefix: "Processed") 
+      schedule.deliver(mail.to_s)
 
-      return {status: :delivered, data: {content: mail.to_s}}
+      return schedule
     rescue StandardError => e
-      RoRmaily.logger.log_processing(self, entity, prefix: "Error", level: :error) 
-      return {status: :error, data: {msg: "#{e.to_s}\n\n#{e.backtrace.join("\n")}"}}
+      MailyHerald.logger.log_processing(self, schedule.entity, prefix: "Error", level: :error) 
+      schedule.error("#{e.to_s}\n\n#{e.backtrace.join("\n")}")
+
+      return schedule
     end
 
     private
@@ -156,9 +241,29 @@ module RoRmaily
     end
 
     def validate_conditions
-      evaluator = Utils::MarkupEvaluator.test_conditions(self.conditions)
+      return true if has_conditions_proc?
+
+      result = Utils::MarkupEvaluator.test_conditions(self.conditions)
+
+      errors.add(:conditions, "is not a boolean value") unless result
     rescue StandardError => e
       errors.add(:conditions, e.to_s) 
+    end
+
+    def validate_start_at
+      return true if has_start_at_proc?
+
+      result = Utils::MarkupEvaluator.test_start_at(self.start_at)
+
+      errors.add(:start_at, "is not a time value") unless result
+    rescue StandardError => e
+      errors.add(:start_at, e.to_s) 
+    end
+
+    def mailer_validity
+      !!mailer unless generic_mailer?
+    rescue
+      errors.add(:mailer_name, :invalid)
     end
   end
 end

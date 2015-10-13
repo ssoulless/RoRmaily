@@ -1,4 +1,4 @@
-module RoRmaily
+module MailyHerald
   # Represents subscriptions list.
   #
   # Entities can be subscribed to lists by creating {Subscription} object for them.
@@ -9,14 +9,16 @@ module RoRmaily
   # @attr [String]    title
   # @attr [String]    context_name    Name of the {Context} used by List.
   class List < ActiveRecord::Base
-    include RoRmaily::Autonaming
+    include MailyHerald::Autonaming
 
     if Rails::VERSION::MAJOR == 3
       attr_accessible :name, :title, :context_name
     end
 
-    has_many :dispatches, class_name: "RoRmaily::Dispatch"
-    has_many :subscriptions, class_name: "RoRmaily::Subscription"
+    has_many :dispatches, class_name: "MailyHerald::Dispatch"
+    has_many :subscriptions, class_name: "MailyHerald::Subscription"
+
+    validates :context, presence: true
 
     validate do |list|
       list.errors.add(:base, "Can't change this list because it is locked.") if list.locked?
@@ -30,7 +32,7 @@ module RoRmaily
 
     # Returns {Context} object associated with List.
     def context
-      @context ||= RoRmaily.context self.context_name
+      @context ||= MailyHerald.context self.context_name
     end
 
     # Subscribes entity to List.
@@ -53,14 +55,15 @@ module RoRmaily
 
     # Checks whether entity is subscribed to List.
     def subscribed? entity
-      subscription_for(entity).try(:active?)
+      s = Subscription.get_from(entity) || subscription_for(entity)
+      s.try(:active?)
     end
 
     # Checks whether entity is not subscribed to List.
     #
     # True if user has inactive subscription or never been subscribed.
     def unsubscribed? entity
-      s = subscription_for(entity)
+      s = Subscription.get_from(entity) || subscription_for(entity)
       s ? !s.active? : true
     end
 
@@ -105,9 +108,9 @@ module RoRmaily
     end
 
     # Check if List is locked.
-    # @see RoRmaily.list_locked?
+    # @see MailyHerald.list_locked?
     def locked?
-      RoRmaily.list_locked?(self.name)
+      MailyHerald.list_locked?(self.name)
     end
 
     private

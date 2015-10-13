@@ -1,4 +1,4 @@
-module RoRmaily
+module MailyHerald
   # Stores information about email delivery to entity.
   #
   # It is associated with entity object and {Dispatch}.
@@ -20,7 +20,7 @@ module RoRmaily
     AVAILABLE_STATUSES = [:scheduled, :delivered, :skipped, :error]
 
     belongs_to  :entity,        polymorphic: true
-    belongs_to  :mailing,       class_name: "RoRmaily::Dispatch", foreign_key: :mailing_id
+    belongs_to  :mailing,       class_name: "MailyHerald::Dispatch", foreign_key: :mailing_id
 
     validates   :entity,        presence: true
     validates   :mailing,       presence: true
@@ -37,8 +37,16 @@ module RoRmaily
     scope       :error,         lambda { where(status: :error) }
     scope       :scheduled,     lambda { where(status: :scheduled) }
     scope       :processed,     lambda { where(status: [:delivered, :skipped, :error]) }
+    scope       :not_skipped,   lambda { where("status != 'skipped'") }
+    scope       :like_email,    lambda {|query| where("maily_herald_logs.entity_email LIKE (?)", "%#{query}%") }
 
     serialize   :data,          Hash
+
+    # Contains `Mail::Message` object that was delivered.
+    #
+    # Present only in logs of state `delivered` and obtained via
+    # `Mailing.run` method.
+    attr_accessor :mail
 
     if Rails::VERSION::MAJOR == 3
       attr_accessible :status, :data
@@ -95,6 +103,44 @@ module RoRmaily
 
     def scheduled?
       self.status == :scheduled
+    end
+
+    def processed?
+      [:delivered, :skipped, :error].include?(self.status)
+    end
+
+    # Set attributes of a schedule so it has 'skipped' status.
+    def skip reason
+      if self.status == :scheduled
+        self.status = :skipped
+        self.data[:skip_reason] = reason
+        true
+      end
+    end
+
+    # Set attributes of a schedule so it is postponed.
+    def postpone_delivery
+      if !self.data[:delivery_attempts] || self.data[:delivery_attempts].length < 3
+        self.data[:original_processing_at] ||= self.processing_at
+        self.data[:delivery_attempts] ||= []
+        self.data[:delivery_attempts].push(date_at: Time.now, action: :postpone, reason: :not_processable)
+        self.processing_at = Time.now + 1.day
+        true
+      end
+    end
+
+    # Set attributes of a schedule so it has 'delivered' status.
+    # @param content Body of delivered email.
+    def deliver content
+      self.status = :delivered
+      self.data[:content] = content
+    end
+
+    # Set attributes of a schedule so it has 'error' status.
+    # @param msg Error description.
+    def error msg
+      self.status = :error
+      self.data[:msg] = msg
     end
   end
 end

@@ -23,6 +23,9 @@ require "database_cleaner"
 require 'sidekiq/testing'
 require 'timecop'
 
+require 'coveralls'
+Coveralls.wear!
+
 ENGINE_RAILS_ROOT=File.join(File.dirname(__FILE__), '../')
 
 
@@ -30,7 +33,7 @@ ENGINE_RAILS_ROOT=File.join(File.dirname(__FILE__), '../')
 # in spec/support/ and its subdirectories.
 Dir[File.join(ENGINE_RAILS_ROOT, "spec/support/**/*.rb")].each {|f| require f }
 
-keep_tables = %w[ror_maily_dispatches ror_maily_lists]
+keep_tables = %w[maily_herald_dispatches maily_herald_lists]
 RSpec.configure do |config|
   config.use_transactional_fixtures = false
   config.before(:suite) do
@@ -45,4 +48,4 @@ RSpec.configure do |config|
   end
 end
 
-#RoRmaily.logger.level = Logger::DEBUG
+#MailyHerald.logger.level = Logger::DEBUG

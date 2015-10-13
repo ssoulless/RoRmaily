@@ -1,5 +1,5 @@
-module RoRmaily
-  RoRmaily::Subscription #TODO fix this autoload for dev
+module MailyHerald
+  MailyHerald::Subscription #TODO fix this autoload for dev
 
   class Sequence < Dispatch
     if Rails::VERSION::MAJOR == 3
@@ -7,13 +7,13 @@ module RoRmaily
                       :conditions, :start_at, :period
     end
 
-    include RoRmaily::Autonaming
+    include MailyHerald::Autonaming
 
-    has_many    :logs,                class_name: "RoRmaily::Log", through: :mailings
+    has_many    :logs,                class_name: "MailyHerald::Log", through: :mailings
     if Rails::VERSION::MAJOR == 3
-      has_many    :mailings,          class_name: "RoRmaily::SequenceMailing", order: "absolute_delay ASC", dependent: :destroy
+      has_many    :mailings,          class_name: "MailyHerald::SequenceMailing", order: "absolute_delay ASC", dependent: :destroy
     else
-      has_many    :mailings,          -> { order("absolute_delay ASC") }, class_name: "RoRmaily::SequenceMailing", dependent: :destroy
+      has_many    :mailings,          -> { order("absolute_delay ASC") }, class_name: "MailyHerald::SequenceMailing", dependent: :destroy
     end
 
     validates   :list,                presence: true
@@ -43,14 +43,14 @@ module RoRmaily
         mailing = SequenceMailing.find_by_name(name)
         lock = options.delete(:locked)
 
-        if block_given? && !RoRmaily.dispatch_locked?(name) && (!mailing || lock)
+        if block_given? && !MailyHerald.dispatch_locked?(name) && (!mailing || lock)
           mailing ||= self.mailings.build(name: name)
           mailing.sequence = self
           yield(mailing)
           mailing.skip_updating_schedules = true if self.new_record?
           mailing.save!
 
-          RoRmaily.lock_dispatch(name) if lock
+          MailyHerald.lock_dispatch(name) if lock
         end
 
         mailing
@@ -59,14 +59,20 @@ module RoRmaily
 
     # Sends sequence mailings to all subscribed entities.
     #
-    # Returns array of `Mail::Message`.
+    # Performs actual sending of emails; should be called in background.
+    #
+    # Returns array of {MailyHerald::Log} with actual `Mail::Message` objects stored
+    # in {MailyHerald::Log.mail} attributes.
     def run
       # TODO better scope here to exclude schedules for users outside context scope
       schedules.where("processing_at <= (?)", Time.now).each do |schedule|
         if schedule.entity
-          schedule.mailing.deliver_to schedule.entity
+          mail = schedule.mailing.send(:deliver, schedule)
+          schedule.reload
+          schedule.mail = mail
+          schedule
         else
-          RoRmaily.logger.log_processing(schedule.mailing, {class: schedule.entity_type, id: schedule.entity_id}, prefix: "Removing schedule for non-existing entity") 
+          MailyHerald.logger.log_processing(schedule.mailing, {class: schedule.entity_type, id: schedule.entity_id}, prefix: "Removing schedule for non-existing entity") 
           schedule.destroy
         end
       end
@@ -119,18 +125,17 @@ module RoRmaily
 
     # Sets the delivery schedule for given entity
     #
+    # New schedule will be created or existing one updated.
+    #
     # Schedule is {Log} object of type "schedule".
     def set_schedule_for entity
       # TODO handle override subscription?
 
-      # support entity with joined subscription table for better performance
-      if entity.has_attribute?(:maily_subscription_id)
-        subscribed = !!entity.maily_subscription_active
-      else
-        subscribed = self.list.subscribed?(entity)
-      end
+      subscribed = self.list.subscribed?(entity)
+      mailing = next_mailing(entity)
+      start_time = calculate_processing_time_for(entity, mailing) if mailing
 
-      if !subscribed || !self.start_at || !enabled? || !(mailing = next_mailing(entity))
+      if !subscribed || !self.start_at || !enabled? || !mailing || !start_time 
         log = schedule_for(entity)
         log.try(:destroy)
         return
@@ -141,7 +146,7 @@ module RoRmaily
       log.with_lock do
         log.set_attributes_for(mailing, entity, {
           status: :scheduled,
-          processing_at: calculate_processing_time_for(entity, mailing)
+          processing_at: start_time,
         })
         log.save!
       end
@@ -149,15 +154,17 @@ module RoRmaily
     end
 
     # Sets delivery schedules of all entities in mailing scope.
-    def update_schedules
+    #
+    # New schedules will be created or existing ones updated.
+    def set_schedules
       self.list.context.scope_with_subscription(self.list, :outer).each do |entity|
-        RoRmaily.logger.debug "Updating schedule of #{self} sequence for entity ##{entity.id} #{entity}"
+        MailyHerald.logger.debug "Updating schedule of #{self} sequence for entity ##{entity.id} #{entity}"
         set_schedule_for entity
       end
     end
 
     def update_schedules_callback
-      Rails.env.test? ? update_schedules : RoRmaily::ScheduleUpdater.perform_in(10.seconds, self.id)
+      Rails.env.test? ? set_schedules : MailyHerald::ScheduleUpdater.perform_in(10.seconds, self.id)
     end
 
     # Returns {Log} object which is the delivery schedule for given entity.
@@ -178,15 +185,17 @@ module RoRmaily
       if ls.first
         ls.last.processing_at + (mailing.absolute_delay - ls.last.mailing.absolute_delay)
       else
-        begin
-          Time.parse(self.start_at) + mailing.absolute_delay
-        rescue
-          subscription = self.list.subscription_for(entity)
-          evaluator = Utils::MarkupEvaluator.new(self.list.context.drop_for(entity, subscription))
-          evaluated_start = evaluator.evaluate_variable(self.start_at)
+        subscription = self.list.subscription_for(entity)
 
-          evaluated_start + mailing.absolute_delay
+        if has_start_at_proc?
+          evaluated_start = start_at.call(entity, subscription)
+        else
+          evaluator = Utils::MarkupEvaluator.new(self.list.context.drop_for(entity, subscription))
+
+          evaluated_start = evaluator.evaluate_start_at(self.start_at)
         end
+
+        evaluated_start ? evaluated_start + mailing.absolute_delay : nil
       end
     end
 

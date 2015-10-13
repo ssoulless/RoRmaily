@@ -1,7 +1,7 @@
-module RoRmaily
+module MailyHerald
   module TemplateRenderer
     def self.included(base)
-      base.send :include, RoRmaily::TemplateRenderer::InstanceMethods
+      base.send :include, MailyHerald::TemplateRenderer::InstanceMethods
     end
 
     module InstanceMethods

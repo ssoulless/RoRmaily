@@ -1,4 +1,4 @@
-module RoRmaily
+module MailyHerald
   class SequenceMailing < Mailing
     if Rails::VERSION::MAJOR == 3
       attr_accessible :absolute_delay_in_days
@@ -6,7 +6,7 @@ module RoRmaily
 
     attr_accessor :skip_updating_schedules
 
-    belongs_to  :sequence,      class_name: "RoRmaily::Sequence"
+    belongs_to  :sequence,      class_name: "MailyHerald::Sequence"
 
     validates   :absolute_delay,presence: true, numericality: true
     validates   :sequence,      presence: true
@@ -21,9 +21,7 @@ module RoRmaily
       self.list_id = self.sequence.list_id
     end
 
-    after_save if: Proc.new{|m| !m.skip_updating_schedules && (m.state_changed? || m.absolute_delay_changed?)} do
-      self.sequence.update_schedules_callback
-    end
+    after_save :update_schedules_callback, if: Proc.new{|m| !m.skip_updating_schedules && (m.state_changed? || m.absolute_delay_changed?)} 
 
     def absolute_delay_in_days
       "%.2f" % (self.absolute_delay.to_f / 1.day.seconds)
@@ -37,29 +35,13 @@ module RoRmaily
       self.sequence.processed_mailings_for(entity).include?(self)
     end
 
-    # Delivers mailing to given entity.
-    def deliver_to entity
-      super(entity)
+    def update_schedules_callback
+      self.sequence.update_schedules_callback
     end
 
-    def deliver_with_mailer_to entity
-      current_time = Time.now
-
-      schedule = self.sequence.schedule_for(entity)
-
-      schedule.with_lock do
-        # make sure schedule hasn't been processed in the meantime
-        if schedule && schedule.mailing == self && schedule.processing_at && schedule.processing_at <= current_time && schedule.scheduled?
-
-          attrs = super entity
-          if attrs
-            schedule.attributes = attrs
-            schedule.processing_at = current_time
-            schedule.save!
-            self.sequence.set_schedule_for(entity)
-          end
-        end
-      end if schedule
+    # Returns collection of all delivery schedules ({Log} collection).
+    def schedules
+      self.sequence.schedules
     end
 
     def override_subscription?
@@ -69,5 +51,30 @@ module RoRmaily
     def processable? entity
       self.sequence.enabled? && super
     end
+
+    def locked?
+      MailyHerald.dispatch_locked?(self.sequence.name)
+    end
+
+    private
+
+    def deliver_with_mailer schedule
+      current_time = Time.now
+
+      schedule.with_lock do
+        # make sure schedule hasn't been processed in the meantime
+        if schedule && schedule.mailing == self && schedule.processing_at && schedule.processing_at <= current_time && schedule.scheduled?
+
+          schedule = super schedule
+          if schedule
+            schedule.processing_at = current_time if schedule.processed?
+            schedule.save!
+
+            self.sequence.set_schedule_for(schedule.entity) if schedule.processed?
+          end
+        end
+      end if schedule
+    end
+
   end
 end

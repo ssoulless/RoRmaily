@@ -3,12 +3,12 @@
 $:.push File.expand_path("../lib", __FILE__)
 
 # Maintain your gem's version:
-require "ror_maily/version"
+require "maily_herald/version"
 
 # Describe your gem and declare its dependencies:
 Gem::Specification.new do |s|
   s.name        = "ror_maily"
-  s.version     = RoRmaily::VERSION
+  s.version     = MailyHerald::VERSION
   s.authors     = ["Sebastian Velandia"]
   s.email       = ["sebas.velandia@grupo.ly"]
   s.homepage    = "https://github.com/ssoulless/RoRmaily"

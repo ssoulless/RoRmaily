@@ -1,11 +1,11 @@
 #!/usr/bin/env ruby
 
 require 'rubygems'
-require 'ror_maily'
-require 'ror_maily/cli'
+require 'maily_herald'
+require 'maily_herald/cli'
 
 begin
-  cli = RoRmaily::CLI.instance
+  cli = MailyHerald::CLI.instance
   cli.parse
   cli.paperboy
 rescue => e

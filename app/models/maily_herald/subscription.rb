@@ -1,7 +1,7 @@
-module RoRmaily
+module MailyHerald
   class Subscription < ActiveRecord::Base
     belongs_to  :entity,        polymorphic: true
-    belongs_to  :list,          class_name: "RoRmaily::List"
+    belongs_to  :list,          class_name: "MailyHerald::List"
 
     validates   :entity,        presence: true
     validates   :list,          presence: true
@@ -19,14 +19,29 @@ module RoRmaily
 
     after_initialize do
       if self.new_record?
-        self.token = RoRmaily::Utils.random_hex(20)
+        self.token = MailyHerald::Utils.random_hex(20)
       end
     end
 
     after_save :update_schedules, if: Proc.new{|s| s.active_changed?}
 
+    def self.get_from(entity)
+      if entity.has_attribute?(:maily_subscription_id) && entity.maily_subscription_id
+        subscription = MailyHerald::Subscription.new
+
+        entity.attributes.each do |k, v|
+          if match = k.match(/^maily_subscription_(\w+)$/)
+            subscription.send("#{match[1]}=", v)
+          end
+        end
+
+        subscription.readonly!
+        subscription
+      end
+    end
+
     def active?
-      !new_record? && read_attribute(:active)
+      read_attribute(:id) && read_attribute(:active)
     end
 
     def deactivate!
@@ -42,7 +57,7 @@ module RoRmaily
     end
 
     def token_url
-      RoRmaily::Engine.routes.url_helpers.ubsubscribe_url(self)
+      MailyHerald::Engine.routes.url_helpers.maily_unsubscribe_url(self)
     end
 
     def to_liquid
@@ -52,6 +67,12 @@ module RoRmaily
     end
 
     def update_schedules
+      AdHocMailing.where(list_id: self.list).each do |m|
+        m.set_schedule_for self.entity
+      end
+      OneTimeMailing.where(list_id: self.list).each do |m|
+        m.set_schedule_for self.entity
+      end
       PeriodicalMailing.where(list_id: self.list).each do |m|
         m.set_schedule_for self.entity
       end

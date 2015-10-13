@@ -1,4 +1,4 @@
-module RoRmaily
+module MailyHerald
 
   # Provides some common patters for models that have both :name and :title attributes.
   # It adds some format constraints to :name and title attributes and makes sure
@@ -10,7 +10,7 @@ module RoRmaily
   module Autonaming
     def self.included(base)
       base.extend ClassMethods
-      base.send :include, RoRmaily::Autonaming::InstanceMethods
+      base.send :include, MailyHerald::Autonaming::InstanceMethods
 
       base.class_eval do
         validates   :name,                presence: true, format: {with: /\A\w+\z/}, uniqueness: true

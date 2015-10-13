@@ -1,4 +1,4 @@
-module RoRmaily
+module MailyHerald
   # This helper helps overwriting Maily TokensController and/or views in main app
   module TokensHelper
     extend ActiveSupport::Concern

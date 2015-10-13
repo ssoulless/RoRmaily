@@ -1,6 +1,6 @@
-class CreateRoRmailyTables < ActiveRecord::Migration
+class CreateMailyHeraldTables < ActiveRecord::Migration
   def change
-    create_table :ror_maily_dispatches do |t|
+    create_table :maily_herald_dispatches do |t|
       t.string            :type,                                        null: false
       t.integer           :sequence_id
       t.integer           :list_id,                                     null: false
@@ -19,9 +19,9 @@ class CreateRoRmailyTables < ActiveRecord::Migration
 
       t.timestamps
     end
-		add_index :ror_maily_dispatches, :name, unique: true
+		add_index :maily_herald_dispatches, :name, unique: true
 
-    create_table :ror_maily_subscriptions do |t|
+    create_table :maily_herald_subscriptions do |t|
       t.integer           :entity_id,                                   null: false
       t.integer           :list_id,                                     null: false
       t.string            :entity_type,                                 null: false
@@ -34,7 +34,7 @@ class CreateRoRmailyTables < ActiveRecord::Migration
       t.timestamps
     end
 
-    create_table :ror_maily_logs do |t|
+    create_table :maily_herald_logs do |t|
       t.integer           :entity_id,                                   null: false
       t.string            :entity_type,                                 null: false
       t.string            :entity_email
@@ -44,7 +44,7 @@ class CreateRoRmailyTables < ActiveRecord::Migration
       t.datetime          :processing_at
     end
 
-    create_table :ror_maily_lists do |t|
+    create_table :maily_herald_lists do |t|
       t.string            :name,                                        null: false
       t.string            :title
       t.string            :context_name

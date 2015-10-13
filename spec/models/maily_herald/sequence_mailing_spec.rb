@@ -1,18 +1,18 @@
 require 'spec_helper'
 
-describe RoRmaily::SequenceMailing do
+describe MailyHerald::SequenceMailing do
   before(:each) do
-    @sequence = RoRmaily.sequence(:newsletters)
+    @sequence = MailyHerald.sequence(:newsletters)
     @mailing = @sequence.mailings.first
   end
 
   describe "Validations" do
     it do
       @mailing.absolute_delay = nil
-      @mailing.should_not be_valid
+      expect(@mailing).not_to be_valid
 
       @mailing.absolute_delay = ""
-      @mailing.should_not be_valid
+      expect(@mailing).not_to be_valid
     end
   end
 end

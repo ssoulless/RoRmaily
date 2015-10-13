@@ -1,3 +1,3 @@
-RoRmaily.setup do |config|
+MailyHerald.setup do |config|
   # Put your contexts and mailing definitions here
 end

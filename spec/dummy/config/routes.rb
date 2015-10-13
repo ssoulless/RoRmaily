@@ -1,4 +1,4 @@
 Rails.application.routes.draw do
 
-  mount RoRmaily::Engine => "/ror_maily"
+  mount MailyHerald::Engine => "/maily_herald"
 end

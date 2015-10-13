@@ -1,4 +1,4 @@
-module RoRmaily
+module MailyHerald
   # Main dispatch class.
   #
   # Inherited by all {Mailing} classes.
@@ -12,7 +12,6 @@ module RoRmaily
   # @attr [Fixnum]    sequence_id     {Sequence} association id.
   # @attr [Fixnum]    list_id         {List} association id.
   # @attr [String]    conditions      Delivery conditions as Liquid expression.
-  # @attr [String]    start_at        Time as string or Liquid expression.
   # @attr [String]    mailer_name     {Mailer} class name. 
   #                                   This refers to {Mailer} used by Dispatch while sending emails.
   # @attr [String]    name            Dispatch name.
@@ -32,12 +31,12 @@ module RoRmaily
   # @attr [String]    override_subscription Defines whether email should be sent regardless of 
   #                                   entity subscription state.
   class Dispatch < ActiveRecord::Base
-    belongs_to  :list,          class_name: "RoRmaily::List"
+    belongs_to  :list,          class_name: "MailyHerald::List"
 
     validates   :list,          presence: true
     validates   :state,         presence: true, inclusion: {in: [:enabled, :disabled, :archived]}
     validate do |dispatch|
-      dispatch.errors.add(:base, "Can't change this dispatch because it is locked.") if dispatch.locked?
+      dispatch.errors.add(:base, "Can't change this dispatch because it is locked.") if dispatch.changes.present? && dispatch.locked?
     end
     before_destroy do |dispatch|
       if dispatch.locked?
@@ -53,9 +52,50 @@ module RoRmaily
     scope       :archived,      lambda { where(state: :archived) }
     scope       :not_archived,  lambda { where("state != (?)", :archived) }
 
-    scope       :sequence,      lambda { where(type: Sequence) }
+    scope       :ad_hoc_mailing, lambda { where(type: AdHocMailing) }
     scope       :one_time_mailing, lambda { where(type: OneTimeMailing) }
     scope       :periodical_mailing, lambda { where(type: PeriodicalMailing) }
+    scope       :sequence,      lambda { where(type: Sequence) }
+
+    before_validation do
+      if @start_at_proc
+        self.start_at = "proc"
+      end
+    end
+
+    after_save do
+      if @start_at_proc
+        MailyHerald.start_at_procs[self.id] = @start_at_proc
+      end
+    end
+
+    # Sets start_at value of {OneTimeMailing}, {PeriodicalMailing} and {SequenceMailing}.
+    #
+    # @param v String with Liquid expression or `Proc` that evaluates to `Time`.
+    def start_at= v
+      if v.respond_to? :call
+        @start_at_proc = v
+      else
+        super(v.is_a?(Time) ? v.to_s : v)
+      end
+    end
+
+    # Returns time as string with Liquid expression or Proc.
+    def start_at
+      @start_at_proc || MailyHerald.start_at_procs[self.id] || read_attribute(:start_at)
+    end
+
+    def has_start_at_proc?
+      !!(@start_at_proc || MailyHerald.start_at_procs[self.id])
+    end
+
+    def start_at_changed?
+      if has_start_at_proc?
+        @start_at_proc != MailyHerald.start_at_procs[self.id]
+      else
+        super
+      end
+    end
 
     # Returns dispatch state as symbol
     def state
@@ -92,10 +132,20 @@ module RoRmaily
       write_attribute(:state, "archived")
     end
 
-    # Returns {List} associated with this dispatch
+    # Sets {List} associated with this dispatch
+    #
+    # @param l {List} name or {List} object
     def list= l
-      l = RoRmaily::List.find_by_name(l.to_s) if l.is_a?(String) || l.is_a?(Symbol)
+      l = MailyHerald::List.find_by_name(l.to_s) if l.is_a?(String) || l.is_a?(Symbol)
       super(l)
+    end
+
+    def subscription_valid? entity
+      self.override_subscription? || self.list.subscribed?(entity)
+    end
+
+    def in_scope? entity
+      self.list.context.scope.exists?(entity)
     end
 
     # Checks if dispatch can be sent to given entity.
@@ -107,13 +157,13 @@ module RoRmaily
     #
     # @param entity [ActiveRecord::Base] Recipient
     def processable? entity
-      self.enabled? && (self.override_subscription? || self.list.subscribed?(entity)) && self.list.context.scope.exists?(entity)
+      self.enabled? && subscription_valid?(entity) && in_scope?(entity)
     end
 
     # Check if dispatch is locked.
-    # @see RoRmaily.dispatch_locked?
+    # @see MailyHerald.dispatch_locked?
     def locked?
-      RoRmaily.dispatch_locked?(self.name)
+      MailyHerald.dispatch_locked?(self.name)
     end
   end
 end

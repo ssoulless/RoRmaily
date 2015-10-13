@@ -5,9 +5,9 @@ require 'singleton'
 require 'optparse'
 require 'erb'
 
-require 'ror_maily'
+require 'maily_herald'
 
-module RoRmaily
+module MailyHerald
   class CLI
     include Singleton
 
@@ -57,21 +57,21 @@ module RoRmaily
         # so let's just do that instead:
         Sidekiq.redis = {url: options[:redis_url], namespace: options[:redis_namespace]}
 
-        redis = RoRmaily.redis
-        RoRmaily.logger.info "RoRmaily running in #{RUBY_DESCRIPTION}"
+        redis = MailyHerald.redis
+        MailyHerald.logger.info "MailyHerald running in #{RUBY_DESCRIPTION}"
 
         if !options[:daemon]
-          RoRmaily.logger.info 'Starting processing, hit Ctrl-C to stop'
+          MailyHerald.logger.info 'Starting processing, hit Ctrl-C to stop'
         end
 
         begin
           worker = Thread.new do
             while true
-              unless RoRmaily::Manager.job_enqueued?
-                RoRmaily.run_all 
+              unless MailyHerald::Manager.job_enqueued?
+                MailyHerald.run_all 
               else
                 # TODO: this is not logged
-                #RoRmaily.logger.error 'Unable to queue job'
+                #MailyHerald.logger.error 'Unable to queue job'
               end
 
               sleep 20
@@ -83,7 +83,7 @@ module RoRmaily
             handle_signal(signal)
           end
         rescue Interrupt
-          RoRmaily.logger.info 'Shutting down'
+          MailyHerald.logger.info 'Shutting down'
           worker.exit
           reset_pid
           exit(0)
@@ -96,7 +96,7 @@ module RoRmaily
 
       set_environment cli[:environment]
 
-      RoRmaily.options = RoRmaily.read_options(cli[:config_file] || "config/ror_maily.yml").merge(cli)
+      MailyHerald.options = MailyHerald.read_options(cli[:config_file] || "config/maily_herald.yml").merge(cli)
     end
 
     def initialize_logger
@@ -106,8 +106,8 @@ module RoRmaily
       }
       opts[:target] = options[:logfile] if options[:logfile]
 
-      RoRmaily::Logging.initialize(opts)
-      RoRmaily.logger.info "Started with options: #{options}"
+      MailyHerald::Logging.initialize(opts)
+      MailyHerald.logger.info "Started with options: #{options}"
     end
 
     def parse_options(argv)
@@ -115,7 +115,7 @@ module RoRmaily
       @parsers = {}
 
       @parsers[:paperboy] = OptionParser.new do |o|
-        o.banner = "ror_maily paperboy [options]"
+        o.banner = "maily_herald paperboy [options]"
 
         o.on "--start", "Start Paperboy daemon" do |arg|
           opts[:action] = :start
@@ -147,7 +147,7 @@ module RoRmaily
       end
 
       @parsers[:generic] = OptionParser.new do |o|
-        o.banner = "ror_maily [paperboy] [options]"
+        o.banner = "maily_herald [paperboy] [options]"
 
         o.separator ""
         o.separator "Common options:"
@@ -191,7 +191,7 @@ module RoRmaily
     end
 
     def options
-      RoRmaily.options
+      MailyHerald.options
     end
 
     def daemonize
@@ -270,7 +270,7 @@ module RoRmaily
     end
 
     def handle_signal(sig)
-      RoRmaily.logger.debug "Got #{sig} signal"
+      MailyHerald.logger.debug "Got #{sig} signal"
       case sig
       when 'INT'
         # Handle Ctrl-C in JRuby like MRI
@@ -280,11 +280,11 @@ module RoRmaily
         # Heroku sends TERM and then waits 10 seconds for process to exit.
         raise Interrupt
       when 'USR1'
-        RoRmaily.logger.info "Received USR1, doing nothing..."
+        MailyHerald.logger.info "Received USR1, doing nothing..."
       when 'USR2'
-        if RoRmaily.options[:logfile]
-          RoRmaily.logger.info "Received USR2, reopening log file"
-          RoRmaily::Logging.initialize_logger(target: RoRmaily.options[:logfile])
+        if MailyHerald.options[:logfile]
+          MailyHerald.logger.info "Received USR2, reopening log file"
+          MailyHerald::Logging.initialize_logger(target: MailyHerald.options[:logfile])
         end
       end
     end

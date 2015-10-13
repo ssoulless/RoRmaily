@@ -1,7 +1,7 @@
 FactoryGirl.define do
   factory :user do
-    sequence(:name)  {|n| "Sebastian #{n}"}
-    sequence(:email)  {|n| "sebastian#{n}@doe.com"}
+    sequence(:name)  {|n| "John #{n}"}
+    sequence(:email)  {|n| "john#{n}@doe.com"}
     active true
 
     factory :inactive_user do

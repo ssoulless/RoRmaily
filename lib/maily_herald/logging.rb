@@ -1,7 +1,7 @@
 require 'time'
 require 'logger'
 
-module RoRmaily
+module MailyHerald
   module Logging
     OPTIONS = {
       target: STDOUT,
@@ -50,6 +50,8 @@ module RoRmaily
       @options ||= OPTIONS.dup
       @options.merge!(opts) if opts
 
+      @options[:target] = Rails.root + @options[:target] if @options[:target].is_a?(String) && Pathname.new(@options[:target]).relative? && defined?(Rails)
+      
       @logger = Logger.new(@options[:target])
       @logger.level = @options[:level]
       @logger.formatter = Formatter.new
@@ -83,7 +85,7 @@ module RoRmaily
     end
 
     def logger
-      RoRmaily::Logging.logger
+      MailyHerald::Logging.logger
     end
 
   end

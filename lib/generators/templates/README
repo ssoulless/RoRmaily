@@ -1,2 +1,2 @@
-Welcome to RoRmaily!
-Don't forget to create your contexts in initializer (config/initializers/ror_maily.rb).
+Welcome to MailyHerald!
+Don't forget to create your contexts in initializer (config/initializers/maily_herald.rb).

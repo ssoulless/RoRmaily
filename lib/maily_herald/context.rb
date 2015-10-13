@@ -1,7 +1,7 @@
-module RoRmaily
+module MailyHerald
 
   # Abstraction layer for accessing collections of Entities and their attributes.
-  # Information provided by scope is used while sending {RoRmaily::Mailing mailings}.
+  # Information provided by scope is used while sending {MailyHerald::Mailing mailings}.
   #
   # {Context} defines following:
   #
@@ -88,9 +88,9 @@ module RoRmaily
 
     # Identification name of the {Context}. 
     #
-    # This can be then used in {RoRmaily.context} method to fetch the {Context}.
+    # This can be then used in {MailyHerald.context} method to fetch the {Context}.
     #
-    # @see RoRmaily.context
+    # @see MailyHerald.context
     attr_reader :name
 
     attr_writer :destination
@@ -160,9 +160,9 @@ module RoRmaily
       end
     end
 
-    # Returns Entity collection scope with joined {RoRmaily::Subscription}.
+    # Returns Entity collection scope with joined {MailyHerald::Subscription}.
     #
-    # @param list [List, Fixnum, String] {RoRmaily::List} reference
+    # @param list [List, Fixnum, String] {MailyHerald::List} reference
     # @param mode [:inner, :outer] SQL JOIN mode
     def scope_with_subscription list, mode = :inner
       list_id = case list
@@ -194,7 +194,7 @@ module RoRmaily
     #
     # Defines Entity attributes that can be accessed using this Context.
     # Attributes defined this way are then accesible in Liquid templates 
-    # in Generic Mailer ({RoRmaily::Mailer#generic}).
+    # in Generic Mailer ({MailyHerald::Mailer#generic}).
     #
     # If block passed, it is used to create Context Attributes.  
     #
@@ -210,6 +210,8 @@ module RoRmaily
     # Obtains {Context} attributes in a form of (nested) +Hash+ which 
     # values are procs each returning single Entity attribute value.
     def attributes_list
+      return {} unless @attributes
+
       attributes = @attributes.dup
       attributes.setup 
       attributes.for_drop
@@ -217,6 +219,8 @@ module RoRmaily
 
     # Returns Liquid drop created from Context attributes.
     def drop_for entity, subscription
+      return {} unless @attributes
+
       attributes = @attributes.dup
       attributes.setup entity, subscription
       Drop.new(attributes.for_drop)

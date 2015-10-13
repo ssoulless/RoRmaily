@@ -1,4 +1,4 @@
 # desc "Explaining what the task does"
-# task :ror_maily do
+# task :maily_herald do
 #   # Task goes here
 # end

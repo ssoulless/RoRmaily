@@ -1,10 +1,10 @@
 require 'spec_helper'
 
-describe RoRmaily::Context do
+describe MailyHerald::Context do
   describe "setup" do
     before(:each) do
       @user = FactoryGirl.create :user
-      @mailing = RoRmaily.one_time_mailing :test_mailing
+      @mailing = MailyHerald.one_time_mailing :test_mailing
       @list = @mailing.list
       @context = @list.context
     end
@@ -17,25 +17,25 @@ describe RoRmaily::Context do
       end
 
       it "should get valid context" do
-        @context.should be_a(RoRmaily::Context)
+        expect(@context).to be_kind_of(MailyHerald::Context)
       end
 
       it "should resolve attributes properly" do
-        @drop["user"].should be_a(RoRmaily::Context::Drop)
-        @drop["user"]["name"].should eq(@user.name)
-        @drop["user"]["properties"]["prop1"].should eq(@user.name[0])
+        expect(@drop["user"]).to be_kind_of(MailyHerald::Context::Drop)
+        expect(@drop["user"]["name"]).to eq(@user.name)
+        expect(@drop["user"]["properties"]["prop1"]).to eq(@user.name[0])
       end
 
       it "should resolve subscription attributes properly" do
-        @drop["subscription"].should be_a(RoRmaily::Subscription)
+        expect(@drop["subscription"]).to be_kind_of(MailyHerald::Subscription)
       end
     end
   end
 
   it "should handle both destination procs and strings" do
     @user = FactoryGirl.create :user
-    context = RoRmaily.context :all_users
-    context.destination_for(@user).should eq(@user.email)
-    context.destination_attribute.should be_nil
+    context = MailyHerald.context :all_users
+    expect(context.destination_for(@user)).to eq(@user.email)
+    expect(context.destination_attribute).to be_nil
   end
 end

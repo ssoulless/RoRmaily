@@ -1,38 +1,45 @@
 require 'spec_helper'
 
-describe RoRmaily::Mailer do
+describe MailyHerald::Mailer do
   before(:each) do
     @entity = FactoryGirl.create :user
-    @mailing = RoRmaily.dispatch(:sample_mail)
+    @mailing = MailyHerald.dispatch(:ad_hoc_mail)
     @list = @mailing.list
   end
 
-  describe "without subscription" do
+  context "without subscription" do
     it "should not deliver" do
-      RoRmaily::Log.delivered.count.should eq(0)
+      expect(MailyHerald::Log.delivered.count).to eq(0)
 
-      TestMailer.sample_mail(@entity).deliver
+      AdHocMailer.ad_hoc_mail(@entity).deliver
 
-      RoRmaily::Log.delivered.count.should eq(0)
+      expect(MailyHerald::Log.delivered.count).to eq(0)
     end
   end
 
-  describe "with subscription" do
+  context "with subscription" do
     before(:each) do
       @list.subscribe! @entity
     end
 
     it "should deliver" do
-      RoRmaily::Log.delivered.count.should eq(0)
+      expect(MailyHerald::Log.delivered.count).to eq(0)
 
-      TestMailer.sample_mail(@entity).deliver
+      AdHocMailer.ad_hoc_mail(@entity).deliver
 
-      RoRmaily::Log.delivered.count.should eq(1)
+      expect(MailyHerald::Log.delivered.count).to eq(1)
     end
   end
 
-  # missing mailers are how handled silently (bypassing Maily)
-  #it "should handle missing mailer" do
-    #expect { TestMailer.sample_mail_error(@entity).deliver }.to raise_error
-  #end
+  context "without defined mailing" do
+    it "should not deliver" do
+      expect do
+        expect(MailyHerald::Log.delivered.count).to eq(0)
+
+        AdHocMailer.missing_mailing_mail(@entity).deliver
+
+        expect(MailyHerald::Log.delivered.count).to eq(0)
+      end.not_to change { ActionMailer::Base.deliveries.count }
+    end
+  end
 end
