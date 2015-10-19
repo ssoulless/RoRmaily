@@ -1,4 +1,4 @@
-# RoRmaily
+# RoRmaily v0.0.1
 
 [![Build Status](https://travis-ci.org/ssoulless/RoRmaily.svg?branch=development)](https://travis-ci.org/ssoulless/RoRmaily) [![Coverage Status](https://coveralls.io/repos/ssoulless/RoRmaily/badge.svg?branch=development&service=github)](https://coveralls.io/github/ssoulless/RoRmaily?branch=development)
 
