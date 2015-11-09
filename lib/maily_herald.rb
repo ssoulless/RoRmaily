@@ -8,6 +8,8 @@ if defined?(::Rails::Engine)
   require "maily_herald/engine"
 end
 
+#Testing Travis
+
 module MailyHerald
   class Async
     include Sidekiq::Worker
